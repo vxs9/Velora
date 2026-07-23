@@ -1,5 +1,5 @@
 /* =========================================================================
-   VentaScope — TRANSLATIONS (Spanish / English)
+   Impulsa — TRANSLATIONS (Spanish / English)
    Every user-facing string lives here. Add a key to both `es` and `en`.
    ========================================================================= */
 
@@ -15,8 +15,8 @@ const I18N = {
 
     "hero.badge": "🔥 Calor de mercado en vivo · actualizado cada mes",
     "hero.title": "Descubre dónde el mundo está listo para comprar.",
-    "hero.slogan": "Te enseñamos a vender — y te mostramos dónde y cuándo hacerlo.",
-    "hero.lead": "VentaScope combina cursos de tutoría en ventas con un explorador de mercados que clasifica los países por oportunidad de venta, mes a mes.",
+    "hero.slogan": "Aprende a vender y descubre dónde crecer.",
+    "hero.lead": "Impulsa combina cursos de tutoría en ventas con un explorador de mercados que clasifica los países por oportunidad de venta, mes a mes.",
     "hero.cta1": "Explorar el mercado",
     "hero.cta2": "Ver nuestros cursos",
     "hero.stat1": "países analizados",
@@ -63,14 +63,14 @@ const I18N = {
     "method.note": "Nota: las cifras son un modelo curado y editable con fines educativos, no datos financieros en vivo.",
 
     "about.eyebrow": "El equipo",
-    "about.title": "Quién está detrás de VentaScope",
-    "about.sub": "Dos socios con una convicción compartida: vender es una habilidad que cualquiera puede aprender con la guía y el momento correctos.",
-    "about.p1.name": "Francisco Aránguz",
-    "about.p1.role": "Cofundador y Tutor Principal de Ventas",
-    "about.p1.text": "[ Aquí va tu biografía. Cuéntanos sobre tu trayectoria en ventas, tu experiencia y qué te motiva. Se edita en un solo lugar. ]",
-    "about.p2.name": "Nombre del socio",
+    "about.title": "Quién está detrás de Impulsa",
+    "about.sub": "Dos socios nacidos en lugares distintos y unidos por un mismo proyecto. Tras años vendiendo en todo tipo de plataformas —dropshipping, trading y ventas por comisión— hoy ayudan a nuevos emprendedores a empezar y a multiplicar sus ganancias.",
+    "about.p1.name": "Jhabet Valdivia",
+    "about.p1.role": "Cofundador y Tutor de Ventas",
+    "about.p1.text": "Emprendedor incansable que ha vendido de mil formas: dropshipping, trading y ventas por comisión. Está convencido de que vender se aprende con práctica y buena guía, y por eso acompaña a quienes recién empiezan para que den sus primeros pasos con confianza.",
+    "about.p2.name": "Matías Escobedo",
     "about.p2.role": "Cofundador y Analista de Mercados",
-    "about.p2.text": "[ Aquí va la biografía de tu socio. Comparte su historia, sus habilidades y su rol en el proyecto. Envíame los detalles y los agrego. ]",
+    "about.p2.text": "Socio de camino y estratega del proyecto. Combina su experiencia en ventas con el análisis de mercados para encontrar el momento y el país ideal para cada oportunidad. Su meta: que cada estudiante crezca, porque nosotros crecemos cuando tú creces.",
 
     "contact.eyebrow": "Hablemos",
     "contact.title": "Encontremos juntos tu próximo mercado",
@@ -86,8 +86,8 @@ const I18N = {
     "contact.ok": "¡Gracias! Se abrirá tu correo para enviarnos el mensaje.",
     "contact.err": "Por favor completa todos los campos correctamente.",
 
-    "footer.slogan": "Te enseñamos a vender — y te mostramos dónde y cuándo hacerlo.",
-    "footer.rights": "© 2026 VentaScope. Proyecto educativo. Todos los datos son ilustrativos.",
+    "footer.slogan": "Aprende a vender y descubre dónde crecer.",
+    "footer.rights": "© 2026 Impulsa. Proyecto educativo. Todos los datos son ilustrativos.",
 
     "modal.trend": "Tendencia de 12 meses",
     "modal.factors": "Factores del mercado",
@@ -106,8 +106,8 @@ const I18N = {
 
     "hero.badge": "🔥 Live market heat · updated monthly",
     "hero.title": "Know where the world is ready to buy.",
-    "hero.slogan": "We teach you to sell — and show you where and when to do it.",
-    "hero.lead": "VentaScope combines expert sales-tutoring courses with a live market explorer that ranks countries by selling opportunity, month by month.",
+    "hero.slogan": "Learn to sell — and discover where to grow.",
+    "hero.lead": "Impulsa combines expert sales-tutoring courses with a live market explorer that ranks countries by selling opportunity, month by month.",
     "hero.cta1": "Explore the market",
     "hero.cta2": "View our courses",
     "hero.stat1": "countries tracked",
@@ -154,14 +154,14 @@ const I18N = {
     "method.note": "Note: figures are a curated, editable model for educational purposes — not live financial data.",
 
     "about.eyebrow": "The team",
-    "about.title": "Who is behind VentaScope",
-    "about.sub": "Two partners with a shared belief: selling is a skill anyone can learn with the right guidance and the right timing.",
-    "about.p1.name": "Francisco Aránguz",
-    "about.p1.role": "Co-founder & Lead Sales Tutor",
-    "about.p1.text": "[ Your biography goes here. Tell us about your background in sales, your experience and what drives you. You can edit this in one place. ]",
-    "about.p2.name": "Partner's name",
+    "about.title": "Who is behind Impulsa",
+    "about.sub": "Two partners born in different places, united by a single project. After years selling across all kinds of platforms —dropshipping, trading and commission-based sales— they now help new entrepreneurs get started and multiply their earnings.",
+    "about.p1.name": "Jhabet Valdivia",
+    "about.p1.role": "Co-founder & Sales Tutor",
+    "about.p1.text": "A tireless entrepreneur who has sold in a thousand ways: dropshipping, trading and commission-based sales. He's convinced that selling is learned through practice and good guidance, which is why he mentors beginners so they can take their first steps with confidence.",
+    "about.p2.name": "Matías Escobedo",
     "about.p2.role": "Co-founder & Market Analyst",
-    "about.p2.text": "[ Your partner's biography goes here. Share their story, skills and role in the project. Send me the details and I'll add them. ]",
+    "about.p2.text": "Project strategist and partner on the journey. He blends his sales experience with market analysis to find the ideal timing and country for every opportunity. His goal: for every student to grow — because we grow when you grow.",
 
     "contact.eyebrow": "Get in touch",
     "contact.title": "Let's find your next market together",
@@ -177,8 +177,8 @@ const I18N = {
     "contact.ok": "Thanks! Your email app will open to send us the message.",
     "contact.err": "Please fill in every field correctly.",
 
-    "footer.slogan": "We teach you to sell — and show you where and when to do it.",
-    "footer.rights": "© 2026 VentaScope. Educational project. All data is illustrative.",
+    "footer.slogan": "Learn to sell — and discover where to grow.",
+    "footer.rights": "© 2026 Impulsa. Educational project. All data is illustrative.",
 
     "modal.trend": "12-month trend",
     "modal.factors": "Market factors",

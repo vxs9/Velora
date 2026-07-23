@@ -1,5 +1,5 @@
 /* =========================================================================
-   VentaScope — APP LOGIC
+   Impulsa — APP LOGIC
    Vanilla JS. No build step, no dependencies.
    ========================================================================= */
 
@@ -326,9 +326,9 @@
         status.className = "contact__status is-err";
         return;
       }
-      const subject = encodeURIComponent(`[VentaScope] ${name}`);
+      const subject = encodeURIComponent(`[Impulsa] ${name}`);
       const body = encodeURIComponent(`${msg}\n\n— ${name} (${email})`);
-      window.location.href = `mailto:hola@ventascope.com?subject=${subject}&body=${body}`;
+      window.location.href = `mailto:hola@impulsaventas.com?subject=${subject}&body=${body}`;
       status.textContent = t("contact.ok");
       status.className = "contact__status is-ok";
       form.reset();

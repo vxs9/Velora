@@ -1,5 +1,5 @@
 /* =========================================================================
-   VentaScope — DATA LAYER
+   Impulsa — DATA LAYER
    -------------------------------------------------------------------------
    This is the ONLY file you need to edit to change the market data.
    Everything here is a curated, editable educational model (not live data).

@@ -1,6 +1,6 @@
-# 🧭 VentaScope
+# 📈 Impulsa
 
-**Sales Tutoring & Market Intelligence** — *Te enseñamos a vender, y te mostramos dónde y cuándo hacerlo.*
+**Sales Tutoring & Market Intelligence** — *Aprende a vender y descubre dónde crecer.*
 
 > Aplicación web bilingüe (Español / English) para vender cursos de tutoría en
 > ventas, con un **Explorador de Mercados** que indica en qué país es el mejor
@@ -101,9 +101,9 @@ aplicacion-ingles/
 ```
 
 ## 🎨 Brand
-- **Name:** VentaScope
-- **Slogan (ES):** *Te enseñamos a vender — y te mostramos dónde y cuándo hacerlo.*
-- **Slogan (EN):** *We teach you to sell — and show you where and when to do it.*
-- **Contact (fictional):** `hola@ventascope.com`
+- **Name:** Impulsa
+- **Slogan (ES):** *Aprende a vender y descubre dónde crecer.*
+- **Slogan (EN):** *Learn to sell — and discover where to grow.*
+- **Contact (fictional):** `hola@impulsaventas.com`
 
 *Educational project — all data is illustrative.*
