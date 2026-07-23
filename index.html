@@ -3,6 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Security: only allow the page to load its own resources (+ Google Fonts).
+       Blocks injected/third-party scripts, mitigates XSS and content injection. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'self' mailto:; object-src 'none'" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+
   <meta name="description" content="Impulsa — plataforma de cursos de tutoría en ventas e inteligencia de mercados. Descubre en qué país es el mejor momento para vender." />
   <title>Impulsa — Sales Tutoring & Market Intelligence</title>
 

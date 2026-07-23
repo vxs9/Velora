@@ -6,9 +6,13 @@
 (function () {
   "use strict";
 
+  // ---- Safe localStorage (some sandboxes / file:// block it) ----
+  function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* ignore */ } }
+
   // ---- State ----
   const state = {
-    lang: localStorage.getItem("vs_lang") || detectLang(),
+    lang: lsGet("vs_lang") || detectLang(),
     month: new Date().getMonth(), // 0..11, defaults to the current month
     region: "all",
   };
@@ -287,7 +291,7 @@
     $$(".lang__btn").forEach((b) =>
       b.addEventListener("click", () => {
         state.lang = b.dataset.lang;
-        localStorage.setItem("vs_lang", state.lang);
+        lsSet("vs_lang", state.lang);
         renderAll();
       })
     );
