@@ -1,278 +1,178 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <!-- Security: only allow the page to load its own resources (+ Google Fonts).
-       Blocks injected/third-party scripts, mitigates XSS and content injection. -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'self' mailto:; object-src 'none'" />
-  <meta name="referrer" content="strict-origin-when-cross-origin" />
-
-  <meta name="description" content="Impulsa — plataforma de cursos de tutoría en ventas e inteligencia de mercados. Descubre en qué país es el mejor momento para vender." />
-  <title>Impulsa — Sales Tutoring & Market Intelligence</title>
-
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Nunito+Sans:wght@400;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="assets/css/styles.css" />
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📈</text></svg>" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta name="description" content="Áurea — Tienda online elegante. Selección cuidada, compra protegida y atención cercana.">
+  <title>Áurea · Tienda online</title>
+  <link rel="stylesheet" href="assets/css/styles.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9C%A6%3C/text%3E%3C/svg%3E">
 </head>
 <body>
 
-  <!-- ===================== NAVBAR ===================== -->
-  <header class="nav" id="top">
-    <div class="nav__inner container">
-      <a href="#top" class="brand" aria-label="Impulsa">
-        <span class="brand__mark">📈</span>
-        <span class="brand__text">
-          <strong>Impulsa</strong>
-          <em data-i18n="brand.tagline">Sales Tutoring &amp; Market Intelligence</em>
-        </span>
-      </a>
+  <!-- ======= Barra superior de confianza ======= -->
+  <div class="topbar">
+    <span>✦ Compra protegida · Atención personalizada · Devoluciones fáciles</span>
+  </div>
 
-      <nav class="nav__links" id="navLinks" aria-label="Primary">
-        <a href="#market" data-i18n="nav.market">Market</a>
-        <a href="#courses" data-i18n="nav.courses">Courses</a>
-        <a href="#method" data-i18n="nav.method">How it works</a>
-        <a href="#about" data-i18n="nav.about">About</a>
-        <a href="#contact" data-i18n="nav.contact">Contact</a>
-      </nav>
+  <!-- ======= Encabezado ======= -->
+  <header class="header" id="header">
+    <button class="icon-btn hamburger" id="btnMenu" aria-label="Abrir menú" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
 
-      <div class="nav__actions">
-        <div class="lang" role="group" aria-label="Language selector">
-          <button class="lang__btn" data-lang="es" type="button">ES</button>
-          <button class="lang__btn" data-lang="en" type="button">EN</button>
-        </div>
-        <button class="nav__toggle" id="navToggle" aria-label="Menu" aria-expanded="false" type="button">
-          <span></span><span></span><span></span>
-        </button>
-      </div>
+    <a class="brand" href="#inicio" id="brandLink">
+      <span class="brand-mark">✦</span>
+      <span class="brand-name">ÁUREA</span>
+    </a>
+
+    <div class="header-actions">
+      <button class="icon-btn" id="btnAccount" aria-label="Mi cuenta">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/></svg>
+        <span class="icon-label" id="accountLabel">Entrar</span>
+      </button>
+      <button class="icon-btn cart-btn" id="btnCart" aria-label="Abrir carrito">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 7h12l1.5 12.5a1 1 0 0 1-1 1.5h-13a1 1 0 0 1-1-1.5L6 7z"/><path d="M9 10V6a3 3 0 0 1 6 0v4"/></svg>
+        <span class="cart-badge" id="cartBadge" hidden>0</span>
+      </button>
     </div>
   </header>
 
-  <!-- ===================== HERO ===================== -->
-  <section class="hero">
-    <div class="hero__glow" aria-hidden="true"></div>
-    <div class="container hero__inner">
-      <div class="hero__copy">
-        <span class="badge" data-i18n="hero.badge">🔥 Live market heat · updated monthly</span>
-        <h1 class="hero__title" data-i18n="hero.title">
-          Know where the world is ready to buy.
-        </h1>
-        <p class="hero__slogan" data-i18n="hero.slogan">
-          We teach you to sell — and show you where and when to do it.
-        </p>
-        <p class="hero__lead" data-i18n="hero.lead">
-          Impulsa combines expert sales-tutoring courses with a live market
-          explorer that ranks countries by selling opportunity, month by month.
-        </p>
-        <div class="hero__cta">
-          <a href="#market" class="btn btn--primary" data-i18n="hero.cta1">Explore the market</a>
-          <a href="#courses" class="btn btn--ghost" data-i18n="hero.cta2">View our courses</a>
-        </div>
-        <ul class="hero__stats">
-          <li><strong>12</strong><span data-i18n="hero.stat1">countries tracked</span></li>
-          <li><strong>4</strong><span data-i18n="hero.stat2">tutoring programs</span></li>
-          <li><strong>2</strong><span data-i18n="hero.stat3">languages</span></li>
-        </ul>
-      </div>
-
-      <aside class="hero__card" id="heroCard" aria-live="polite">
-        <!-- Filled by JS: best market of the current month -->
-      </aside>
+  <!-- ======= Menú lateral (3 barritas) ======= -->
+  <nav class="drawer drawer-left" id="navDrawer" aria-label="Menú principal">
+    <div class="drawer-head">
+      <span class="brand-name">ÁUREA</span>
+      <button class="icon-btn" data-close aria-label="Cerrar menú">✕</button>
     </div>
-  </section>
-
-  <!-- ===================== MARKET EXPLORER ===================== -->
-  <section class="section" id="market">
-    <div class="container">
-      <div class="section__head">
-        <span class="eyebrow" data-i18n="market.eyebrow">Market Explorer</span>
-        <h2 class="section__title" data-i18n="market.title">Where is it hot to sell right now?</h2>
-        <p class="section__sub" data-i18n="market.sub">
-          Pick a month and a region. The Opportunity Index (0–100) blends market
-          size, purchasing power, e-learning adoption, sales culture and seasonality.
-        </p>
-      </div>
-
-      <div class="controls">
-        <div class="controls__row">
-          <label class="controls__label" data-i18n="market.month">Month</label>
-          <div class="months" id="monthPicker" role="tablist" aria-label="Month"></div>
-        </div>
-        <div class="controls__row">
-          <label class="controls__label" data-i18n="market.region">Region</label>
-          <div class="chips" id="regionPicker"></div>
-        </div>
-      </div>
-
-      <div class="market__grid">
-        <div class="spotlight" id="spotlight" aria-live="polite"></div>
-        <div class="leaderboard">
-          <div class="leaderboard__head">
-            <h3 data-i18n="market.ranking">Ranking</h3>
-            <span class="leaderboard__hint" data-i18n="market.hint">Click a country for details</span>
-          </div>
-          <ol class="ranklist" id="rankList"></ol>
-        </div>
-      </div>
+    <ul class="nav-list" id="navList">
+      <li><a href="#inicio" data-nav>Inicio</a></li>
+      <li><a href="#catalogo" data-nav>Catálogo</a></li>
+      <li><a href="#ofertas" data-nav>Ofertas</a></li>
+      <li><a href="#nosotros" data-nav>Sobre nosotros</a></li>
+      <li><a href="#contacto" data-nav>Contacto</a></li>
+      <li><a href="#" id="navAccount" data-nav>Mi cuenta</a></li>
+      <li class="nav-admin" id="navAdminItem" hidden><a href="#" id="navAdmin" data-nav>⚙ Panel del creador</a></li>
+    </ul>
+    <div class="drawer-foot">
+      <button class="link-btn" id="navPrivacy">Privacidad y protección de datos</button>
     </div>
-  </section>
+  </nav>
 
-  <!-- ===================== COURSES ===================== -->
-  <section class="section section--tint" id="courses">
-    <div class="container">
-      <div class="section__head">
-        <span class="eyebrow" data-i18n="courses.eyebrow">Tutoring Programs</span>
-        <h2 class="section__title" data-i18n="courses.title">Courses that turn effort into revenue</h2>
-        <p class="section__sub" data-i18n="courses.sub">
-          Live tutoring, real playbooks and bilingual materials. From your first
-          pitch to closing international deals.
-        </p>
-      </div>
-      <div class="courses" id="courseGrid"></div>
+  <!-- ======= Carrito lateral ======= -->
+  <aside class="drawer drawer-right" id="cartDrawer" aria-label="Carrito de compras">
+    <div class="drawer-head">
+      <strong>Tu carrito</strong>
+      <button class="icon-btn" data-close aria-label="Cerrar carrito">✕</button>
     </div>
-  </section>
-
-  <!-- ===================== METHODOLOGY ===================== -->
-  <section class="section" id="method">
-    <div class="container">
-      <div class="section__head">
-        <span class="eyebrow" data-i18n="method.eyebrow">How it works</span>
-        <h2 class="section__title" data-i18n="method.title">The Opportunity Index, explained</h2>
-        <p class="section__sub" data-i18n="method.sub">
-          Transparent by design. Every score comes from five weighted factors,
-          adjusted by each country's real business seasonality.
-        </p>
-      </div>
-      <div class="method">
-        <article class="method__card">
-          <span class="method__icon">🌍</span>
-          <h3 data-i18n="method.f1.t">Market size</h3>
-          <p data-i18n="method.f1.d">Population, economic activity and the number of businesses that hire and train sellers.</p>
-        </article>
-        <article class="method__card">
-          <span class="method__icon">💳</span>
-          <h3 data-i18n="method.f2.t">Purchasing power</h3>
-          <p data-i18n="method.f2.d">Ability and willingness to invest in professional education and tutoring.</p>
-        </article>
-        <article class="method__card">
-          <span class="method__icon">📶</span>
-          <h3 data-i18n="method.f3.t">E-learning adoption</h3>
-          <p data-i18n="method.f3.d">Digital maturity and how comfortable the market is buying courses online.</p>
-        </article>
-        <article class="method__card">
-          <span class="method__icon">🤝</span>
-          <h3 data-i18n="method.f4.t">Sales culture</h3>
-          <p data-i18n="method.f4.d">How central sales, commissions and negotiation are to the local economy.</p>
-        </article>
-        <article class="method__card">
-          <span class="method__icon">📅</span>
-          <h3 data-i18n="method.f5.t">Seasonality</h3>
-          <p data-i18n="method.f5.d">Fiscal year-ends, holidays and hemisphere seasons that move demand each month.</p>
-        </article>
-      </div>
-      <p class="method__note" data-i18n="method.note">
-        Note: figures are a curated, editable model for educational purposes — not live financial data.
-      </p>
+    <div class="cart-items" id="cartItems"></div>
+    <div class="cart-summary" id="cartSummary" hidden>
+      <div class="row"><span>Subtotal</span><strong id="cartSubtotal">$0</strong></div>
+      <p class="muted small">El envío y los detalles finales se confirman al finalizar la compra.</p>
+      <button class="btn btn-primary btn-block" id="btnCheckout">Finalizar compra</button>
+      <button class="link-btn" id="btnClearCart">Vaciar carrito</button>
     </div>
-  </section>
-
-  <!-- ===================== ABOUT / BIOS ===================== -->
-  <section class="section section--tint" id="about">
-    <div class="container">
-      <div class="section__head">
-        <span class="eyebrow" data-i18n="about.eyebrow">The team</span>
-        <h2 class="section__title" data-i18n="about.title">Who is behind Impulsa</h2>
-        <p class="section__sub" data-i18n="about.sub">
-          Two partners with a shared belief: selling is a skill anyone can learn
-          with the right guidance and the right timing.
-        </p>
-      </div>
-      <div class="bios">
-        <article class="bio">
-          <div class="bio__avatar">👤</div>
-          <h3 class="bio__name" data-i18n="about.p1.name">Jhabet Valdivia</h3>
-          <p class="bio__role" data-i18n="about.p1.role">Co-founder &amp; Sales Tutor</p>
-          <p class="bio__text" data-i18n="about.p1.text">
-            A tireless entrepreneur who has sold in a thousand ways: dropshipping,
-            trading and commission-based sales. He mentors beginners so they can
-            take their first steps with confidence.
-          </p>
-        </article>
-        <article class="bio">
-          <div class="bio__avatar">👤</div>
-          <h3 class="bio__name" data-i18n="about.p2.name">Matías Escobedo</h3>
-          <p class="bio__role" data-i18n="about.p2.role">Co-founder &amp; Market Analyst</p>
-          <p class="bio__text" data-i18n="about.p2.text">
-            Project strategist who blends sales experience with market analysis to
-            find the ideal timing and country for every opportunity. We grow when
-            you grow.
-          </p>
-        </article>
-      </div>
+    <div class="cart-empty" id="cartEmpty">
+      <p>Tu carrito está vacío.</p>
+      <button class="btn btn-outline" data-close>Ver el catálogo</button>
     </div>
-  </section>
+  </aside>
 
-  <!-- ===================== CONTACT ===================== -->
-  <section class="section" id="contact">
-    <div class="container contact">
-      <div class="contact__info">
-        <span class="eyebrow" data-i18n="contact.eyebrow">Get in touch</span>
-        <h2 class="section__title" data-i18n="contact.title">Let's find your next market together</h2>
-        <p class="section__sub" data-i18n="contact.sub">
-          Questions about a course, a country or a custom training plan for your
-          team? We usually reply within one business day.
-        </p>
-        <ul class="contact__list">
-          <li><span>✉️</span> <a href="mailto:hola@impulsaventas.com">hola@impulsaventas.com</a></li>
-          <li><span>🌐</span> <a href="#top">www.impulsaventas.com</a></li>
-          <li><span>📍</span> <span data-i18n="contact.location">Remote-first · Latin America &amp; worldwide</span></li>
-        </ul>
+  <div class="overlay" id="overlay" hidden></div>
+
+  <main>
+    <!-- ======= Inicio / Hero ======= -->
+    <section class="hero" id="inicio">
+      <p class="hero-kicker">Selección cuidada · Calidad garantizada</p>
+      <h1>Elegancia que se nota.<br>Confianza que se siente.</h1>
+      <p class="hero-sub">Descubrí una colección elegida pieza por pieza, con compra protegida y atención humana en cada paso.</p>
+      <div class="hero-cta">
+        <a class="btn btn-primary" href="#catalogo">Explorar el catálogo</a>
+        <a class="btn btn-outline" href="#nosotros">Conocenos</a>
       </div>
+      <div class="trust-row">
+        <div class="trust-item"><strong>🔒 Pago seguro</strong><span>Procesado por plataformas certificadas</span></div>
+        <div class="trust-item"><strong>📦 Envío cuidado</strong><span>Embalaje premium en cada pedido</span></div>
+        <div class="trust-item"><strong>💬 Atención real</strong><span>Respondemos siempre, antes y después</span></div>
+      </div>
+    </section>
 
-      <form class="contact__form" id="contactForm" novalidate>
-        <div class="field">
-          <label for="cName" data-i18n="contact.name">Name</label>
-          <input id="cName" name="name" type="text" required data-i18n-attr="placeholder" data-i18n-placeholder="contact.name.ph" placeholder="Your name" />
+    <!-- ======= Catálogo ======= -->
+    <section class="section" id="catalogo">
+      <div class="section-head">
+        <h2>Catálogo</h2>
+        <p class="muted">Piezas seleccionadas para vos.</p>
+      </div>
+      <div class="catalog-tools">
+        <input type="search" id="searchInput" class="input" placeholder="Buscar productos…" aria-label="Buscar productos">
+        <div class="chips" id="categoryChips"></div>
+      </div>
+      <div class="grid" id="productGrid"></div>
+      <p class="muted center" id="noResults" hidden>No encontramos productos con esa búsqueda.</p>
+    </section>
+
+    <!-- ======= Ofertas ======= -->
+    <section class="section section-alt" id="ofertas">
+      <div class="section-head">
+        <h2>Ofertas</h2>
+        <p class="muted">Oportunidades por tiempo limitado.</p>
+      </div>
+      <div class="grid" id="offerGrid"></div>
+      <p class="muted center" id="noOffers" hidden>Por ahora no hay ofertas activas. Volvé pronto ✦</p>
+    </section>
+
+    <!-- ======= Sobre nosotros ======= -->
+    <section class="section" id="nosotros">
+      <div class="section-head">
+        <h2>Sobre nosotros</h2>
+      </div>
+      <div class="about">
+        <p><strong>Áurea</strong> nace de una idea simple: comprar online debería sentirse tan seguro y agradable como comprar en la mejor tienda de tu ciudad.</p>
+        <p>Cada producto del catálogo pasa por una selección personal. No vendemos nada que no compraríamos nosotros. Y cuando algo no te convence, lo resolvemos: sin vueltas, sin letra chica.</p>
+        <div class="about-values">
+          <div><strong>Transparencia</strong><span>Precios claros y comunicación directa.</span></div>
+          <div><strong>Calidad</strong><span>Selección revisada pieza por pieza.</span></div>
+          <div><strong>Cercanía</strong><span>Una persona real detrás de cada respuesta.</span></div>
         </div>
-        <div class="field">
-          <label for="cEmail" data-i18n="contact.email">Email</label>
-          <input id="cEmail" name="email" type="email" required data-i18n-attr="placeholder" data-i18n-placeholder="contact.email.ph" placeholder="you@email.com" />
-        </div>
-        <div class="field">
-          <label for="cMsg" data-i18n="contact.message">Message</label>
-          <textarea id="cMsg" name="message" rows="4" required data-i18n-attr="placeholder" data-i18n-placeholder="contact.message.ph" placeholder="How can we help?"></textarea>
-        </div>
-        <button type="submit" class="btn btn--primary btn--block" data-i18n="contact.send">Send message</button>
-        <p class="contact__status" id="contactStatus" role="status"></p>
+      </div>
+    </section>
+
+    <!-- ======= Contacto ======= -->
+    <section class="section section-alt" id="contacto">
+      <div class="section-head">
+        <h2>Contacto</h2>
+        <p class="muted">¿Dudas antes de comprar? Escribinos.</p>
+      </div>
+      <form class="contact-form" id="contactForm">
+        <input class="input" type="text" id="contactName" placeholder="Tu nombre" required maxlength="80">
+        <input class="input" type="email" id="contactEmail" placeholder="Tu email" required maxlength="120">
+        <textarea class="input" id="contactMsg" rows="4" placeholder="Contanos en qué te ayudamos" required maxlength="1000"></textarea>
+        <button class="btn btn-primary" type="submit">Enviar mensaje</button>
+        <p class="muted small">Solo usamos tus datos para responderte. Nada más.</p>
       </form>
-    </div>
-  </section>
+    </section>
+  </main>
 
-  <!-- ===================== FOOTER ===================== -->
+  <!-- ======= Pie ======= -->
   <footer class="footer">
-    <div class="container footer__inner">
-      <div class="footer__brand">
-        <span class="brand__mark">📈</span>
-        <strong>Impulsa</strong>
-        <p data-i18n="footer.slogan">We teach you to sell — and show you where and when to do it.</p>
-      </div>
-      <p class="footer__legal">
-        <span data-i18n="footer.rights">© 2026 Impulsa. Educational project. All data is illustrative.</span>
-      </p>
-    </div>
+    <div class="brand"><span class="brand-mark">✦</span><span class="brand-name">ÁUREA</span></div>
+    <p class="muted small">Tienda online con compra protegida.</p>
+    <button class="link-btn" id="footPrivacy">Política de privacidad</button>
+    <p class="muted small">© <span id="year"></span> Áurea. Todos los derechos reservados.</p>
   </footer>
 
-  <!-- ===================== COUNTRY MODAL ===================== -->
-  <div class="modal" id="countryModal" aria-hidden="true" role="dialog" aria-modal="true">
-    <div class="modal__backdrop" data-close></div>
-    <div class="modal__panel" id="modalPanel" role="document"></div>
+  <!-- ======= Modal genérico ======= -->
+  <div class="modal" id="modal" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true">
+      <button class="icon-btn modal-close" data-close aria-label="Cerrar">✕</button>
+      <div id="modalBody"></div>
+    </div>
   </div>
 
+  <div class="toast" id="toast" hidden></div>
+
   <script src="assets/js/data.js"></script>
-  <script src="assets/js/i18n.js"></script>
   <script src="assets/js/app.js"></script>
 </body>
 </html>

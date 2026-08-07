@@ -1,359 +1,701 @@
-/* =========================================================================
-   Impulsa — APP LOGIC
-   Vanilla JS. No build step, no dependencies.
-   ========================================================================= */
+/* ==========================================================================
+   ÁUREA — Lógica de la tienda
+   Carrito, cuentas de usuario, panel del creador, checkout y privacidad.
+   Sin dependencias externas: todo corre en el navegador del visitante.
+   ========================================================================== */
 
 (function () {
   "use strict";
 
-  // ---- Safe localStorage (some sandboxes / file:// block it) ----
-  function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
-  function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* ignore */ } }
-
-  // ---- State ----
-  const state = {
-    lang: lsGet("vs_lang") || detectLang(),
-    month: new Date().getMonth(), // 0..11, defaults to the current month
-    region: "all",
+  /* ---------- Almacenamiento seguro (localStorage puede fallar) ---------- */
+  var store = {
+    get: function (key, fallback) {
+      try {
+        var raw = localStorage.getItem(key);
+        return raw === null ? fallback : JSON.parse(raw);
+      } catch (e) { return fallback; }
+    },
+    set: function (key, value) {
+      try { localStorage.setItem(key, JSON.stringify(value)); return true; }
+      catch (e) { return false; }
+    },
+    del: function (key) {
+      try { localStorage.removeItem(key); } catch (e) { /* sin acceso */ }
+    }
   };
 
-  function detectLang() {
-    const nav = (navigator.language || "es").toLowerCase();
-    return nav.startsWith("en") ? "en" : "es";
+  var KEYS = {
+    products: "aurea_products",
+    cart: "aurea_cart",
+    users: "aurea_users",
+    session: "aurea_session"
+  };
+
+  /* ---------- Utilidades ---------- */
+  function $(sel) { return document.querySelector(sel); }
+  function $all(sel) { return Array.prototype.slice.call(document.querySelectorAll(sel)); }
+
+  function esc(str) {
+    return String(str == null ? "" : str)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   }
 
-  // ---- Tiny helpers ----
-  const $ = (sel, root = document) => root.querySelector(sel);
-  const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
-  const t = (key) => (I18N[state.lang] && I18N[state.lang][key]) || key;
-  const cname = (c) => c.name[state.lang];
-
-  // Color on a warm amber -> hot red scale based on 40..99 index
-  function heatColor(index) {
-    const p = Math.max(0, Math.min(1, (index - 40) / 59));
-    const hue = 45 - p * 45;   // 45 (amber) -> 0 (red)
-    const light = 58 - p * 10; // slightly deeper when hotter
-    return `hsl(${hue}, 90%, ${light}%)`;
+  function money(n) {
+    var num = Number(n) || 0;
+    return CONFIG.currency + " " + num.toLocaleString("es-AR", { maximumFractionDigits: 2 });
   }
 
-  // ============================ RENDERING ============================
-
-  function rankedCountries() {
-    const list = COUNTRIES
-      .filter((c) => state.region === "all" || c.region === state.region)
-      .map((c) => ({ c, index: opportunityIndex(c, state.month) }))
-      .sort((a, b) => b.index - a.index);
-    return list;
+  function toast(msg) {
+    var el = $("#toast");
+    el.textContent = msg;
+    el.hidden = false;
+    clearTimeout(toast._t);
+    toast._t = setTimeout(function () { el.hidden = true; }, 2600);
   }
 
-  function averageIndex(list) {
-    if (!list.length) return 0;
-    return Math.round(list.reduce((s, x) => s + x.index, 0) / list.length);
+  function isValidEmail(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
+
+  /* ---------- Catálogo (semilla + cambios del creador) ---------- */
+  function getProducts() {
+    var saved = store.get(KEYS.products, null);
+    if (Array.isArray(saved) && saved.length) return saved;
+    return PRODUCTS;
+  }
+  function saveProducts(list) { store.set(KEYS.products, list); }
+
+  function findProduct(id) {
+    var list = getProducts();
+    for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i];
+    return null;
   }
 
-  // ---- Static text (elements with data-i18n) ----
-  function applyStaticI18n() {
-    $$("[data-i18n]").forEach((el) => {
-      el.innerHTML = t(el.getAttribute("data-i18n"));
+  /* ---------- Estado ---------- */
+  var state = {
+    category: "Todo",
+    search: "",
+    cart: store.get(KEYS.cart, {}),          // { productId: cantidad }
+    session: store.get(KEYS.session, null)   // { email, name }
+  };
+
+  /* ==========================================================================
+     CATÁLOGO Y OFERTAS
+     ========================================================================== */
+  function categories() {
+    var cats = ["Todo"];
+    getProducts().forEach(function (p) {
+      if (p.category && cats.indexOf(p.category) === -1) cats.push(p.category);
     });
-    $$("[data-i18n-attr]").forEach((el) => {
-      const attr = el.getAttribute("data-i18n-attr");
-      const key = el.getAttribute("data-i18n-" + attr);
-      if (key) el.setAttribute(attr, t(key));
+    return cats;
+  }
+
+  function renderChips() {
+    $("#categoryChips").innerHTML = categories().map(function (c) {
+      return '<button class="chip' + (state.category === c ? " active" : "") +
+        '" data-cat="' + esc(c) + '">' + esc(c) + "</button>";
+    }).join("");
+  }
+
+  function cardHTML(p) {
+    var media = p.image
+      ? '<img src="' + esc(p.image) + '" alt="' + esc(p.name) + '" loading="lazy">'
+      : esc(p.emoji || "🛍️");
+    var tag = "";
+    if (Number(p.stock) === 0) tag = '<span class="card-tag out">Agotado</span>';
+    else if (p.oldPrice && Number(p.oldPrice) > Number(p.price)) {
+      var off = Math.round((1 - Number(p.price) / Number(p.oldPrice)) * 100);
+      tag = '<span class="card-tag">-' + off + "%</span>";
+    }
+    var priceHtml = '<span class="price">' +
+      (p.oldPrice && Number(p.oldPrice) > Number(p.price)
+        ? '<span class="old">' + esc(money(p.oldPrice)) + "</span>" : "") +
+      esc(money(p.price)) + "</span>";
+    var btn = Number(p.stock) === 0
+      ? '<button class="btn btn-sm btn-outline" disabled>Sin stock</button>'
+      : '<button class="btn btn-sm btn-gold" data-add="' + esc(p.id) + '">Agregar</button>';
+
+    return '<article class="card">' +
+      '<div class="card-media" data-view="' + esc(p.id) + '">' + tag + media + "</div>" +
+      '<div class="card-body">' +
+      '<span class="card-cat">' + esc(p.category) + "</span>" +
+      '<h3 class="card-name" data-view="' + esc(p.id) + '">' + esc(p.name) + "</h3>" +
+      '<p class="card-desc">' + esc(p.desc) + "</p>" +
+      '<div class="card-foot">' + priceHtml + btn + "</div>" +
+      "</div></article>";
+  }
+
+  function renderCatalog() {
+    var q = state.search.toLowerCase();
+    var list = getProducts().filter(function (p) {
+      var okCat = state.category === "Todo" || p.category === state.category;
+      var okQ = !q || (p.name + " " + p.desc + " " + p.category).toLowerCase().indexOf(q) !== -1;
+      return okCat && okQ;
     });
-    document.documentElement.lang = state.lang;
-    $$(".lang__btn").forEach((b) =>
-      b.classList.toggle("is-active", b.dataset.lang === state.lang)
+    $("#productGrid").innerHTML = list.map(cardHTML).join("");
+    $("#noResults").hidden = list.length > 0;
+
+    var offers = getProducts().filter(function (p) {
+      return p.oldPrice && Number(p.oldPrice) > Number(p.price);
+    });
+    $("#offerGrid").innerHTML = offers.map(cardHTML).join("");
+    $("#noOffers").hidden = offers.length > 0;
+
+    renderChips();
+  }
+
+  /* ==========================================================================
+     CARRITO
+     ========================================================================== */
+  function cartCount() {
+    var n = 0;
+    for (var id in state.cart) n += state.cart[id];
+    return n;
+  }
+
+  function cartTotal() {
+    var t = 0;
+    for (var id in state.cart) {
+      var p = findProduct(id);
+      if (p) t += Number(p.price) * state.cart[id];
+    }
+    return t;
+  }
+
+  function saveCart() { store.set(KEYS.cart, state.cart); }
+
+  function addToCart(id) {
+    var p = findProduct(id);
+    if (!p || Number(p.stock) === 0) return;
+    var qty = (state.cart[id] || 0) + 1;
+    if (qty > Number(p.stock)) { toast("No hay más stock de este producto"); return; }
+    state.cart[id] = qty;
+    saveCart();
+    renderCart();
+    toast("✦ Agregado al carrito");
+  }
+
+  function setQty(id, qty) {
+    if (qty <= 0) delete state.cart[id];
+    else {
+      var p = findProduct(id);
+      if (p && qty > Number(p.stock)) { toast("Stock máximo alcanzado"); return; }
+      state.cart[id] = qty;
+    }
+    saveCart();
+    renderCart();
+  }
+
+  function renderCart() {
+    var n = cartCount();
+    var badge = $("#cartBadge");
+    badge.hidden = n === 0;
+    badge.textContent = n;
+
+    var itemsEl = $("#cartItems");
+    var ids = Object.keys(state.cart);
+    $("#cartEmpty").style.display = ids.length ? "none" : "flex";
+    $("#cartSummary").hidden = !ids.length;
+
+    itemsEl.innerHTML = ids.map(function (id) {
+      var p = findProduct(id);
+      if (!p) return "";
+      var qty = state.cart[id];
+      var thumb = p.image
+        ? '<img src="' + esc(p.image) + '" alt="">'
+        : esc(p.emoji || "🛍️");
+      return '<div class="cart-item">' +
+        '<div class="cart-thumb">' + thumb + "</div>" +
+        "<div>" +
+        '<div class="cart-item-name">' + esc(p.name) + "</div>" +
+        '<div class="cart-item-price">' + esc(money(p.price)) + " c/u</div>" +
+        '<div class="qty">' +
+        '<button data-qty="-1" data-id="' + esc(id) + '" aria-label="Restar">−</button>' +
+        "<span>" + qty + "</span>" +
+        '<button data-qty="1" data-id="' + esc(id) + '" aria-label="Sumar">+</button>' +
+        "</div></div>" +
+        '<button class="cart-remove" data-remove="' + esc(id) + '">Quitar</button>' +
+        "</div>";
+    }).join("");
+
+    $("#cartSubtotal").textContent = money(cartTotal());
+  }
+
+  /* ==========================================================================
+     DRAWERS / OVERLAY / MODAL
+     ========================================================================== */
+  var overlay = $("#overlay");
+
+  function openDrawer(id) {
+    closeAll();
+    $(id).classList.add("open");
+    overlay.hidden = false;
+    requestAnimationFrame(function () { overlay.classList.add("show"); });
+    if (id === "#navDrawer") {
+      $("#btnMenu").classList.add("open");
+      $("#btnMenu").setAttribute("aria-expanded", "true");
+    }
+  }
+
+  function closeAll() {
+    $all(".drawer").forEach(function (d) { d.classList.remove("open"); });
+    $("#btnMenu").classList.remove("open");
+    $("#btnMenu").setAttribute("aria-expanded", "false");
+    overlay.classList.remove("show");
+    overlay.hidden = true;
+    $("#modal").hidden = true;
+  }
+
+  function openModal(html) {
+    closeAll();
+    $("#modalBody").innerHTML = html;
+    $("#modal").hidden = false;
+  }
+
+  /* ==========================================================================
+     DETALLE DE PRODUCTO
+     ========================================================================== */
+  function viewProduct(id) {
+    var p = findProduct(id);
+    if (!p) return;
+    var media = p.image
+      ? '<img src="' + esc(p.image) + '" alt="' + esc(p.name) + '">'
+      : esc(p.emoji || "🛍️");
+    openModal(
+      '<div class="pd-media">' + media + "</div>" +
+      '<span class="card-cat">' + esc(p.category) + "</span>" +
+      "<h3>" + esc(p.name) + "</h3>" +
+      "<p class='muted'>" + esc(p.desc) + "</p>" +
+      '<p class="price" style="margin:.8rem 0">' +
+      (p.oldPrice && Number(p.oldPrice) > Number(p.price)
+        ? '<span class="old">' + esc(money(p.oldPrice)) + "</span>" : "") +
+      esc(money(p.price)) + "</p>" +
+      '<p class="muted small">' + (Number(p.stock) > 0
+        ? "Stock disponible: " + Number(p.stock) + " unidades"
+        : "Producto agotado por el momento") + "</p>" +
+      (Number(p.stock) > 0
+        ? '<button class="btn btn-gold btn-block" style="margin-top:1rem" data-add="' + esc(p.id) + '">Agregar al carrito</button>'
+        : "")
     );
   }
 
-  // ---- Month picker ----
-  function renderMonths() {
-    const wrap = $("#monthPicker");
-    wrap.innerHTML = "";
-    MONTHS[state.lang].forEach((m, i) => {
-      const b = document.createElement("button");
-      b.type = "button";
-      b.className = "month" + (i === state.month ? " is-active" : "");
-      b.textContent = m;
-      b.setAttribute("role", "tab");
-      b.setAttribute("aria-selected", i === state.month ? "true" : "false");
-      b.addEventListener("click", () => {
-        state.month = i;
-        renderMonths();
-        renderMarket();
-        renderHeroCard();
+  /* ==========================================================================
+     CUENTAS DE USUARIO (registro / inicio de sesión)
+     --------------------------------------------------------------------------
+     Las contraseñas NUNCA se guardan en texto plano: se derivan con PBKDF2
+     (100.000 iteraciones, SHA-256) y una sal aleatoria única por usuario.
+     Todo queda en el navegador de cada persona; nada viaja a servidores.
+     ========================================================================== */
+  function randomSalt() {
+    var bytes = new Uint8Array(16);
+    crypto.getRandomValues(bytes);
+    return Array.prototype.map.call(bytes, function (b) {
+      return ("0" + b.toString(16)).slice(-2);
+    }).join("");
+  }
+
+  function hashPassword(password, salt) {
+    var enc = new TextEncoder();
+    return crypto.subtle.importKey("raw", enc.encode(password), "PBKDF2", false, ["deriveBits"])
+      .then(function (key) {
+        return crypto.subtle.deriveBits(
+          { name: "PBKDF2", salt: enc.encode(salt), iterations: 100000, hash: "SHA-256" },
+          key, 256
+        );
+      })
+      .then(function (bits) {
+        return Array.prototype.map.call(new Uint8Array(bits), function (b) {
+          return ("0" + b.toString(16)).slice(-2);
+        }).join("");
       });
-      wrap.appendChild(b);
-    });
   }
 
-  // ---- Region chips ----
-  function renderRegions() {
-    const wrap = $("#regionPicker");
-    wrap.innerHTML = "";
-    REGIONS.forEach((r) => {
-      const b = document.createElement("button");
-      b.type = "button";
-      b.className = "chip" + (r.id === state.region ? " is-active" : "");
-      b.textContent = r[state.lang];
-      b.addEventListener("click", () => {
-        state.region = r.id;
-        renderRegions();
-        renderMarket();
-      });
-      wrap.appendChild(b);
-    });
+  function isCreator() {
+    return state.session && state.session.email === CONFIG.creatorEmail.toLowerCase();
   }
 
-  // ---- Hero card (best market of current month, always all-regions) ----
-  function renderHeroCard() {
-    const all = COUNTRIES
-      .map((c) => ({ c, index: opportunityIndex(c, state.month) }))
-      .sort((a, b) => b.index - a.index);
-    const top = all[0];
-    const card = $("#heroCard");
-    card.innerHTML = `
-      <span class="herocard__label">${t("hero.card.label")} · ${MONTHS_LONG[state.lang][state.month]}</span>
-      <div class="herocard__flag">${top.c.flag}</div>
-      <h3 class="herocard__name">${cname(top.c)}</h3>
-      <div class="herocard__meter">
-        <div class="herocard__bar" style="width:${top.index}%;background:${heatColor(top.index)}"></div>
-      </div>
-      <div class="herocard__index">
-        <strong style="color:${heatColor(top.index)}">${top.index}</strong>
-        <span>${t("hero.card.index")}</span>
-      </div>
-      <a href="#market" class="herocard__cta">${t("hero.card.cta")} →</a>
-    `;
+  function setSession(sess) {
+    state.session = sess;
+    if (sess) store.set(KEYS.session, sess); else store.del(KEYS.session);
+    renderAccountUI();
   }
 
-  // ---- Market: spotlight + leaderboard ----
-  function renderMarket() {
-    const list = rankedCountries();
-    const avg = averageIndex(list);
-
-    // Spotlight
-    const spot = $("#spotlight");
-    if (list.length) {
-      const top = list[0];
-      const diff = top.index - avg;
-      spot.innerHTML = `
-        <span class="spotlight__tag">${t("market.best")}</span>
-        <div class="spotlight__flag">${top.c.flag}</div>
-        <h3 class="spotlight__name">${cname(top.c)}</h3>
-        <p class="spotlight__note">${top.c.note[state.lang]}</p>
-        <div class="spotlight__score">
-          <div class="spotlight__num" style="color:${heatColor(top.index)}">${top.index}</div>
-          <div class="spotlight__meta">
-            <span>${t("market.index")}</span>
-            <small>+${diff} ${t("market.vs")}</small>
-          </div>
-        </div>
-        <button class="btn btn--ghost btn--sm" data-detail="${top.c.code}">${t("market.details")} →</button>
-      `;
+  function renderAccountUI() {
+    var label = $("#accountLabel");
+    var navAccount = $("#navAccount");
+    if (state.session) {
+      label.textContent = state.session.name.split(" ")[0];
+      navAccount.textContent = "Mi cuenta (" + state.session.name.split(" ")[0] + ")";
     } else {
-      spot.innerHTML = "";
+      label.textContent = "Entrar";
+      navAccount.textContent = "Crear cuenta / Iniciar sesión";
+    }
+    $("#navAdminItem").hidden = !isCreator();
+  }
+
+  function authModal(mode) {
+    var isLogin = mode === "login";
+    openModal(
+      "<h3>" + (isLogin ? "Iniciar sesión" : "Crear tu cuenta") + "</h3>" +
+      '<p class="muted small">' + (isLogin
+        ? "Bienvenido de nuevo a Áurea."
+        : "Solo pedimos lo mínimo: nombre, email y una contraseña. Nada más.") + "</p>" +
+      '<form id="authForm">' +
+      (isLogin ? "" : '<input class="input" type="text" id="authName" placeholder="Tu nombre" required maxlength="60">') +
+      '<input class="input" type="email" id="authEmail" placeholder="Email" required maxlength="120">' +
+      '<input class="input" type="password" id="authPass" placeholder="Contraseña (mínimo 8 caracteres)" required minlength="8" maxlength="100">' +
+      '<p class="form-error" id="authError" hidden></p>' +
+      '<button class="btn btn-primary btn-block" type="submit">' + (isLogin ? "Entrar" : "Crear cuenta") + "</button>" +
+      "</form>" +
+      '<p class="auth-switch"><button class="link-btn" id="authSwitch">' +
+      (isLogin ? "¿No tenés cuenta? Creá una" : "¿Ya tenés cuenta? Iniciá sesión") +
+      "</button></p>"
+    );
+
+    $("#authSwitch").addEventListener("click", function () {
+      authModal(isLogin ? "register" : "login");
+    });
+
+    $("#authForm").addEventListener("submit", function (e) {
+      e.preventDefault();
+      var email = $("#authEmail").value.trim().toLowerCase();
+      var pass = $("#authPass").value;
+      var errEl = $("#authError");
+      errEl.hidden = true;
+
+      if (!isValidEmail(email)) { errEl.textContent = "Ingresá un email válido."; errEl.hidden = false; return; }
+
+      var users = store.get(KEYS.users, {});
+
+      if (isLogin) {
+        var u = users[email];
+        if (!u) { errEl.textContent = "No existe una cuenta con ese email en este dispositivo."; errEl.hidden = false; return; }
+        hashPassword(pass, u.salt).then(function (hash) {
+          if (hash !== u.hash) { errEl.textContent = "Contraseña incorrecta."; errEl.hidden = false; return; }
+          setSession({ email: email, name: u.name });
+          closeAll();
+          toast("Hola de nuevo, " + u.name.split(" ")[0] + " ✦");
+        });
+      } else {
+        var name = $("#authName").value.trim();
+        if (name.length < 2) { errEl.textContent = "Ingresá tu nombre."; errEl.hidden = false; return; }
+        if (users[email]) { errEl.textContent = "Ya existe una cuenta con ese email. Iniciá sesión."; errEl.hidden = false; return; }
+        var salt = randomSalt();
+        hashPassword(pass, salt).then(function (hash) {
+          users[email] = { name: name, salt: salt, hash: hash, created: "" };
+          store.set(KEYS.users, users);
+          setSession({ email: email, name: name });
+          closeAll();
+          toast("¡Cuenta creada! Bienvenido, " + name.split(" ")[0] + " ✦");
+        });
+      }
+    });
+  }
+
+  function accountModal() {
+    if (!state.session) { authModal("login"); return; }
+    openModal(
+      "<h3>Mi cuenta</h3>" +
+      "<p><strong>" + esc(state.session.name) + "</strong><br>" +
+      '<span class="muted">' + esc(state.session.email) + "</span></p>" +
+      (isCreator() ? '<p class="form-ok">✦ Sos el creador de la tienda.</p>' : "") +
+      '<div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-top:1rem">' +
+      (isCreator() ? '<button class="btn btn-gold" id="accAdmin">Panel del creador</button>' : "") +
+      '<button class="btn btn-outline" id="accLogout">Cerrar sesión</button>' +
+      "</div>"
+    );
+    var adminBtn = $("#accAdmin");
+    if (adminBtn) adminBtn.addEventListener("click", adminPanel);
+    $("#accLogout").addEventListener("click", function () {
+      setSession(null);
+      closeAll();
+      toast("Sesión cerrada. ¡Hasta pronto!");
+    });
+  }
+
+  /* ==========================================================================
+     PANEL DEL CREADOR
+     ========================================================================== */
+  function adminPanel() {
+    if (!isCreator()) { toast("Solo el creador puede entrar acá"); return; }
+    var list = getProducts();
+    openModal(
+      "<h3>⚙ Panel del creador</h3>" +
+      '<p class="muted small">Agregá, editá o quitá productos del catálogo. Los cambios se guardan en este navegador; para hacerlos permanentes para todos los visitantes, exportá el catálogo y pedime que lo suba al sitio.</p>' +
+      '<div style="display:flex;gap:.6rem;flex-wrap:wrap;margin:1rem 0">' +
+      '<button class="btn btn-gold btn-sm" id="admNew">＋ Nuevo producto</button>' +
+      '<button class="btn btn-outline btn-sm" id="admExport">Exportar catálogo</button>' +
+      '<button class="btn btn-outline btn-sm" id="admReset">Restaurar original</button>' +
+      "</div>" +
+      '<div class="admin-list">' +
+      list.map(function (p) {
+        return '<div class="admin-row"><span>' + esc(p.emoji || "🛍️") + " <strong>" + esc(p.name) + "</strong> · " +
+          esc(money(p.price)) + " · stock " + Number(p.stock) + "</span>" +
+          '<span class="actions">' +
+          '<button class="btn btn-sm btn-outline" data-edit="' + esc(p.id) + '">Editar</button>' +
+          '<button class="btn btn-sm btn-danger" data-del="' + esc(p.id) + '">✕</button>' +
+          "</span></div>";
+      }).join("") +
+      "</div>" +
+      '<div class="admin-note">💡 <strong>Para cobrar de verdad:</strong> creá tu cuenta gratis en Mercado Pago o Stripe, generá un "link de pago" por producto y pegalo en el campo "Link de pago" al editar cada producto. El botón de pagar del checkout llevará a tus clientes directo ahí. Los detalles están en el README del proyecto.</div>'
+    );
+
+    $("#admNew").addEventListener("click", function () { productForm(null); });
+    $("#admExport").addEventListener("click", exportCatalog);
+    $("#admReset").addEventListener("click", function () {
+      if (confirm("¿Restaurar el catálogo original de ejemplo? Se perderán tus cambios de este navegador.")) {
+        store.del(KEYS.products);
+        renderCatalog(); renderCart();
+        adminPanel();
+        toast("Catálogo restaurado");
+      }
+    });
+    $all("[data-edit]").forEach(function (b) {
+      b.addEventListener("click", function () { productForm(b.getAttribute("data-edit")); });
+    });
+    $all("[data-del]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var p = findProduct(b.getAttribute("data-del"));
+        if (p && confirm('¿Eliminar "' + p.name + '" del catálogo?')) {
+          saveProducts(getProducts().filter(function (x) { return x.id !== p.id; }));
+          delete state.cart[p.id];
+          saveCart();
+          renderCatalog(); renderCart();
+          adminPanel();
+          toast("Producto eliminado");
+        }
+      });
+    });
+  }
+
+  function productForm(id) {
+    var p = id ? findProduct(id) : {
+      id: "p" + Math.floor(Math.random() * 1e9).toString(36),
+      name: "", category: "", price: "", oldPrice: "", emoji: "🛍️",
+      image: "", desc: "", stock: 10, paymentLink: ""
+    };
+    if (!p) return;
+    openModal(
+      "<h3>" + (id ? "Editar producto" : "Nuevo producto") + "</h3>" +
+      '<form id="prodForm">' +
+      '<input class="input" id="pfName" placeholder="Nombre" required maxlength="90" value="' + esc(p.name) + '">' +
+      '<input class="input" id="pfCat" placeholder="Categoría (ej: Tecnología)" required maxlength="40" value="' + esc(p.category) + '">' +
+      '<input class="input" id="pfPrice" type="number" min="0" step="0.01" placeholder="Precio" required value="' + esc(p.price) + '">' +
+      '<input class="input" id="pfOld" type="number" min="0" step="0.01" placeholder="Precio anterior (opcional, para ofertas)" value="' + esc(p.oldPrice || "") + '">' +
+      '<input class="input" id="pfStock" type="number" min="0" step="1" placeholder="Stock" required value="' + esc(p.stock) + '">' +
+      '<input class="input" id="pfEmoji" placeholder="Emoji (si no hay foto)" maxlength="4" value="' + esc(p.emoji) + '">' +
+      '<input class="input" id="pfImage" type="url" placeholder="URL de imagen (opcional, https://...)" value="' + esc(p.image) + '">' +
+      '<input class="input" id="pfPay" type="url" placeholder="Link de pago (opcional, Mercado Pago/Stripe)" value="' + esc(p.paymentLink || "") + '">' +
+      '<textarea class="input" id="pfDesc" rows="3" placeholder="Descripción corta" required maxlength="200">' + esc(p.desc) + "</textarea>" +
+      '<button class="btn btn-primary btn-block" type="submit">Guardar</button>' +
+      "</form>"
+    );
+    $("#prodForm").addEventListener("submit", function (e) {
+      e.preventDefault();
+      var img = $("#pfImage").value.trim();
+      var pay = $("#pfPay").value.trim();
+      if (img && img.indexOf("https://") !== 0) { toast("La imagen debe empezar con https://"); return; }
+      if (pay && pay.indexOf("https://") !== 0) { toast("El link de pago debe empezar con https://"); return; }
+      var next = {
+        id: p.id,
+        name: $("#pfName").value.trim(),
+        category: $("#pfCat").value.trim(),
+        price: Number($("#pfPrice").value) || 0,
+        oldPrice: Number($("#pfOld").value) || 0,
+        stock: Math.max(0, Math.floor(Number($("#pfStock").value) || 0)),
+        emoji: $("#pfEmoji").value.trim() || "🛍️",
+        image: img,
+        paymentLink: pay,
+        desc: $("#pfDesc").value.trim()
+      };
+      var list = getProducts().slice();
+      var idx = -1;
+      for (var i = 0; i < list.length; i++) if (list[i].id === p.id) idx = i;
+      if (idx === -1) list.push(next); else list[idx] = next;
+      saveProducts(list);
+      renderCatalog();
+      renderCart();
+      adminPanel();
+      toast(id ? "Producto actualizado" : "Producto agregado al catálogo");
+    });
+  }
+
+  function exportCatalog() {
+    var json = JSON.stringify(getProducts(), null, 2);
+    openModal(
+      "<h3>Exportar catálogo</h3>" +
+      '<p class="muted small">Copiá este texto y pasámelo en el chat para que actualice el catálogo del sitio publicado (así tus productos los ven todos los visitantes, en cualquier dispositivo).</p>' +
+      '<textarea class="input" rows="12" readonly style="font-family:monospace;font-size:.78rem" id="exportArea">' + esc(json) + "</textarea>" +
+      '<button class="btn btn-primary btn-block" style="margin-top:.8rem" id="copyExport">Copiar al portapapeles</button>'
+    );
+    $("#copyExport").addEventListener("click", function () {
+      $("#exportArea").select();
+      try { document.execCommand("copy"); toast("Catálogo copiado ✦"); }
+      catch (e) { toast("Seleccioná el texto y copialo manualmente"); }
+    });
+  }
+
+  /* ==========================================================================
+     CHECKOUT
+     ========================================================================== */
+  function checkout() {
+    var ids = Object.keys(state.cart);
+    if (!ids.length) return;
+
+    var lines = ids.map(function (id) {
+      var p = findProduct(id);
+      return p ? state.cart[id] + " × " + p.name + " — " + money(Number(p.price) * state.cart[id]) : "";
+    }).filter(Boolean);
+
+    var orderCode = "AU-" + Math.floor(Math.random() * 900000 + 100000);
+    var total = cartTotal();
+
+    // Link de pago: usa el del primer producto que tenga uno, o el general.
+    var payLink = CONFIG.checkoutUrl || "";
+    for (var i = 0; i < ids.length && !payLink; i++) {
+      var p = findProduct(ids[i]);
+      if (p && p.paymentLink) payLink = p.paymentLink;
     }
 
-    // Leaderboard
-    const ol = $("#rankList");
-    ol.innerHTML = "";
-    list.forEach((item, i) => {
-      const li = document.createElement("li");
-      li.className = "rankrow";
-      li.setAttribute("data-detail", item.c.code);
-      li.innerHTML = `
-        <span class="rankrow__pos">${i + 1}</span>
-        <span class="rankrow__flag">${item.c.flag}</span>
-        <span class="rankrow__body">
-          <span class="rankrow__name">${cname(item.c)}</span>
-          <span class="rankrow__meter">
-            <span class="rankrow__bar" style="width:${item.index}%;background:${heatColor(item.index)}"></span>
-          </span>
-        </span>
-        <span class="rankrow__index" style="color:${heatColor(item.index)}">${item.index}</span>
-      `;
-      ol.appendChild(li);
-    });
-
-    // Wire detail openers
-    $$("[data-detail]").forEach((el) =>
-      el.addEventListener("click", () => openModal(el.getAttribute("data-detail")))
+    openModal(
+      "<h3>Finalizar compra</h3>" +
+      '<p class="muted small">Pedido <strong>' + orderCode + "</strong></p>" +
+      '<div style="background:var(--ivory);border-radius:10px;padding:1rem;margin:.8rem 0">' +
+      lines.map(function (l) { return '<div style="font-size:.9rem">' + esc(l) + "</div>"; }).join("") +
+      '<div style="border-top:1px solid var(--gold-soft);margin-top:.6rem;padding-top:.6rem;display:flex;justify-content:space-between"><strong>Total</strong><strong>' + esc(money(total)) + "</strong></div>" +
+      "</div>" +
+      '<form id="checkoutForm">' +
+      '<input class="input" id="coName" placeholder="Nombre y apellido" required maxlength="80" value="' + esc(state.session ? state.session.name : "") + '">' +
+      '<input class="input" id="coEmail" type="email" placeholder="Email de contacto" required maxlength="120" value="' + esc(state.session ? state.session.email : "") + '">' +
+      '<input class="input" id="coPhone" type="tel" placeholder="Teléfono / WhatsApp" required maxlength="30">' +
+      '<input class="input" id="coAddress" placeholder="Dirección de entrega" required maxlength="160">' +
+      '<button class="btn btn-gold btn-block" type="submit">' +
+      (payLink ? "Ir a pagar de forma segura" : "Confirmar pedido") + "</button>" +
+      "</form>" +
+      '<p class="muted small" style="margin-top:.8rem">🔒 Tus datos solo se usan para coordinar esta compra. ' +
+      (payLink
+        ? "El pago se procesa en una plataforma certificada (nunca vemos tu tarjeta)."
+        : "Al confirmar, se abre un email con el detalle del pedido para coordinar el pago y la entrega con la tienda.") +
+      "</p>"
     );
-  }
 
-  // ---- Courses ----
-  function renderCourses() {
-    const grid = $("#courseGrid");
-    grid.innerHTML = "";
-    COURSES.forEach((course) => {
-      const el = document.createElement("article");
-      el.className = "course";
-      el.innerHTML = `
-        <div class="course__top">
-          <span class="course__icon">${course.icon}</span>
-          <span class="course__level">${course.level[state.lang]}</span>
-        </div>
-        <h3 class="course__title">${course.title[state.lang]}</h3>
-        <p class="course__desc">${course.desc[state.lang]}</p>
-        <ul class="course__points">
-          ${course.points[state.lang].map((p) => `<li>${p}</li>`).join("")}
-        </ul>
-        <div class="course__foot">
-          <div class="course__meta">
-            <span class="course__price">${course.price}</span>
-            <span class="course__dur">${course.duration[state.lang]}</span>
-          </div>
-          <a href="#contact" class="btn btn--primary btn--sm">${t("courses.enroll")}</a>
-        </div>
-      `;
-      grid.appendChild(el);
-    });
-  }
-
-  // ---- Country detail modal (12-month SVG chart + factors) ----
-  function openModal(code) {
-    const c = COUNTRIES.find((x) => x.code === code);
-    if (!c) return;
-
-    const monthsData = c.monthly.map((_, i) => opportunityIndex(c, i));
-    const maxV = Math.max(...monthsData);
-
-    // Build SVG bar chart
-    const W = 520, H = 190, pad = 26, n = 12;
-    const bw = (W - pad * 2) / n;
-    let bars = "";
-    monthsData.forEach((v, i) => {
-      const bh = ((v - 35) / (99 - 35)) * (H - pad - 30);
-      const x = pad + i * bw + bw * 0.16;
-      const y = H - 26 - bh;
-      const w = bw * 0.68;
-      const isNow = i === state.month;
-      bars += `
-        <rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${Math.max(2, bh).toFixed(1)}"
-              rx="4" fill="${heatColor(v)}" opacity="${isNow ? 1 : 0.55}"
-              stroke="${isNow ? "#3a2a1e" : "none"}" stroke-width="${isNow ? 1.6 : 0}"></rect>
-        <text x="${(x + w / 2).toFixed(1)}" y="${(y - 5).toFixed(1)}" text-anchor="middle"
-              class="chart__val" style="font-weight:${isNow ? 800 : 600}">${v}</text>
-        <text x="${(x + w / 2).toFixed(1)}" y="${H - 9}" text-anchor="middle" class="chart__lbl">${MONTHS[state.lang][i]}</text>
-      `;
-    });
-    const svg = `<svg viewBox="0 0 ${W} ${H}" class="chart" role="img" aria-label="12-month trend">${bars}</svg>`;
-
-    const factorRows = [
-      ["method.f1.t", c.factors.size],
-      ["method.f2.t", c.factors.power],
-      ["method.f3.t", c.factors.elearning],
-      ["method.f4.t", c.factors.culture],
-    ].map(([key, val]) => `
-      <div class="frow">
-        <span class="frow__label">${t(key)}</span>
-        <span class="frow__meter"><span class="frow__bar" style="width:${val}%;background:${heatColor(val)}"></span></span>
-        <span class="frow__val">${val}</span>
-      </div>
-    `).join("");
-
-    const panel = $("#modalPanel");
-    panel.innerHTML = `
-      <button class="modal__close" data-close aria-label="${t("modal.close")}">✕</button>
-      <div class="modal__header">
-        <span class="modal__flag">${c.flag}</span>
-        <div>
-          <h3 class="modal__title">${cname(c)}</h3>
-          <p class="modal__now">${t("modal.thismonth")}: <strong style="color:${heatColor(opportunityIndex(c, state.month))}">${opportunityIndex(c, state.month)}</strong> · ${MONTHS_LONG[state.lang][state.month]}</p>
-        </div>
-      </div>
-      <p class="modal__note">${c.note[state.lang]}</p>
-      <h4 class="modal__sub">${t("modal.trend")}</h4>
-      ${svg}
-      <h4 class="modal__sub">${t("modal.factors")}</h4>
-      <div class="factors">${factorRows}</div>
-    `;
-
-    const modal = $("#countryModal");
-    modal.classList.add("is-open");
-    modal.setAttribute("aria-hidden", "false");
-    $$("[data-close]", modal).forEach((el) =>
-      el.addEventListener("click", closeModal)
-    );
-  }
-
-  function closeModal() {
-    const modal = $("#countryModal");
-    modal.classList.remove("is-open");
-    modal.setAttribute("aria-hidden", "true");
-  }
-
-  // ============================ EVENTS ============================
-
-  function wireLanguage() {
-    $$(".lang__btn").forEach((b) =>
-      b.addEventListener("click", () => {
-        state.lang = b.dataset.lang;
-        lsSet("vs_lang", state.lang);
-        renderAll();
-      })
-    );
-  }
-
-  function wireNav() {
-    const toggle = $("#navToggle");
-    const links = $("#navLinks");
-    toggle.addEventListener("click", () => {
-      const open = links.classList.toggle("is-open");
-      toggle.setAttribute("aria-expanded", open ? "true" : "false");
-    });
-    $$("#navLinks a").forEach((a) =>
-      a.addEventListener("click", () => {
-        links.classList.remove("is-open");
-        toggle.setAttribute("aria-expanded", "false");
-      })
-    );
-    // Close modal on ESC / backdrop already wired per-open
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") closeModal();
-    });
-  }
-
-  function wireContact() {
-    const form = $("#contactForm");
-    const status = $("#contactStatus");
-    form.addEventListener("submit", (e) => {
+    $("#checkoutForm").addEventListener("submit", function (e) {
       e.preventDefault();
-      const name = $("#cName").value.trim();
-      const email = $("#cEmail").value.trim();
-      const msg = $("#cMsg").value.trim();
-      const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-      if (!name || !emailOk || !msg) {
-        status.textContent = t("contact.err");
-        status.className = "contact__status is-err";
-        return;
+      var name = $("#coName").value.trim();
+      var email = $("#coEmail").value.trim();
+      var phone = $("#coPhone").value.trim();
+      var address = $("#coAddress").value.trim();
+
+      var body = "PEDIDO " + orderCode + " — " + CONFIG.storeName + "\n\n" +
+        lines.join("\n") + "\n\nTOTAL: " + money(total) + "\n\n" +
+        "Cliente: " + name + "\nEmail: " + email + "\nTeléfono: " + phone + "\nEntrega: " + address;
+
+      if (payLink) {
+        // Abre el link de pago y avisa a la tienda por email con el detalle.
+        window.open(payLink, "_blank", "noopener");
       }
-      const subject = encodeURIComponent(`[Impulsa] ${name}`);
-      const body = encodeURIComponent(`${msg}\n\n— ${name} (${email})`);
-      window.location.href = `mailto:hola@impulsaventas.com?subject=${subject}&body=${body}`;
-      status.textContent = t("contact.ok");
-      status.className = "contact__status is-ok";
-      form.reset();
+      window.location.href = "mailto:" + encodeURIComponent(CONFIG.contactEmail) +
+        "?subject=" + encodeURIComponent("Pedido " + orderCode + " · " + CONFIG.storeName) +
+        "&body=" + encodeURIComponent(body);
+
+      state.cart = {};
+      saveCart();
+      renderCart();
+      openModal(
+        "<h3>¡Gracias por tu compra! ✦</h3>" +
+        "<p>Tu pedido <strong>" + orderCode + "</strong> fue registrado.</p>" +
+        '<p class="muted">' + (payLink
+          ? "Completá el pago en la ventana que se abrió. Apenas se acredite, coordinamos la entrega por email o WhatsApp."
+          : "Se abrió tu aplicación de correo con el detalle del pedido: envialo y la tienda te contactará para coordinar pago y entrega.") + "</p>" +
+        '<button class="btn btn-primary btn-block" data-close style="margin-top:1rem">Seguir explorando</button>'
+      );
     });
   }
 
-  // ============================ BOOT ============================
-
-  function renderAll() {
-    applyStaticI18n();
-    renderMonths();
-    renderRegions();
-    renderHeroCard();
-    renderMarket();
-    renderCourses();
+  /* ==========================================================================
+     PRIVACIDAD
+     ========================================================================== */
+  function privacyModal() {
+    openModal(
+      "<h3>Privacidad y protección de datos</h3>" +
+      '<p class="muted small">Última actualización: agosto 2026</p>' +
+      "<p><strong>Recolectamos lo mínimo.</strong> Solo pedimos los datos imprescindibles para atenderte: nombre, email y, si comprás, teléfono y dirección de entrega. No pedimos documentos, ni fecha de nacimiento, ni nada que no haga falta.</p>" +
+      "<p><strong>Tu tarjeta nunca pasa por nosotros.</strong> Los pagos se procesan en plataformas certificadas (Mercado Pago, Stripe o PayPal) que cumplen el estándar internacional PCI-DSS. Esta tienda jamás ve ni guarda números de tarjeta.</p>" +
+      "<p><strong>Tus datos quedan en tu dispositivo.</strong> La cuenta que creás acá se guarda únicamente en tu propio navegador, protegida: la contraseña se transforma con un algoritmo criptográfico (PBKDF2 con sal aleatoria) y nunca se almacena en texto legible. No la enviamos a ningún servidor ni la compartimos con nadie.</p>" +
+      "<p><strong>Sin rastreadores.</strong> Este sitio no usa cookies de publicidad, ni píxeles de seguimiento, ni analítica de terceros. Además, aplica una Política de Seguridad de Contenido (CSP) estricta que bloquea la ejecución de scripts externos.</p>" +
+      "<p><strong>Tus derechos.</strong> Podés pedirnos en cualquier momento que eliminemos los datos de contacto que nos hayas enviado, escribiendo a " + esc(CONFIG.contactEmail) + ". Borrar los datos del navegador está en tus manos: limpiá los datos del sitio y desaparecen.</p>"
+    );
   }
 
-  document.addEventListener("DOMContentLoaded", () => {
-    wireLanguage();
-    wireNav();
-    wireContact();
-    renderAll();
+  /* ==========================================================================
+     EVENTOS
+     ========================================================================== */
+  document.addEventListener("click", function (e) {
+    var t = e.target;
+
+    var addBtn = t.closest("[data-add]");
+    if (addBtn) { addToCart(addBtn.getAttribute("data-add")); return; }
+
+    var viewBtn = t.closest("[data-view]");
+    if (viewBtn) { viewProduct(viewBtn.getAttribute("data-view")); return; }
+
+    var qtyBtn = t.closest("[data-qty]");
+    if (qtyBtn) {
+      var id = qtyBtn.getAttribute("data-id");
+      setQty(id, (state.cart[id] || 0) + Number(qtyBtn.getAttribute("data-qty")));
+      return;
+    }
+
+    var rmBtn = t.closest("[data-remove]");
+    if (rmBtn) { setQty(rmBtn.getAttribute("data-remove"), 0); return; }
+
+    var chip = t.closest(".chip");
+    if (chip) { state.category = chip.getAttribute("data-cat"); renderCatalog(); return; }
+
+    if (t.closest("[data-close]")) { closeAll(); return; }
+    if (t === overlay) { closeAll(); return; }
+
+    var navLink = t.closest("[data-nav]");
+    if (navLink && navLink.getAttribute("href") !== "#") { closeAll(); }
   });
+
+  $("#btnMenu").addEventListener("click", function () {
+    if ($("#navDrawer").classList.contains("open")) closeAll();
+    else openDrawer("#navDrawer");
+  });
+
+  $("#btnCart").addEventListener("click", function () { openDrawer("#cartDrawer"); });
+  $("#btnAccount").addEventListener("click", accountModal);
+  $("#navAccount").addEventListener("click", function (e) { e.preventDefault(); accountModal(); });
+  $("#navAdmin").addEventListener("click", function (e) { e.preventDefault(); adminPanel(); });
+  $("#btnCheckout").addEventListener("click", checkout);
+  $("#btnClearCart").addEventListener("click", function () {
+    state.cart = {};
+    saveCart();
+    renderCart();
+  });
+  $("#navPrivacy").addEventListener("click", privacyModal);
+  $("#footPrivacy").addEventListener("click", privacyModal);
+
+  $("#searchInput").addEventListener("input", function (e) {
+    state.search = e.target.value.trim();
+    renderCatalog();
+  });
+
+  $("#contactForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var name = $("#contactName").value.trim();
+    var email = $("#contactEmail").value.trim();
+    var msg = $("#contactMsg").value.trim();
+    window.location.href = "mailto:" + encodeURIComponent(CONFIG.contactEmail) +
+      "?subject=" + encodeURIComponent("Consulta de " + name + " · " + CONFIG.storeName) +
+      "&body=" + encodeURIComponent(msg + "\n\n— " + name + " (" + email + ")");
+    e.target.reset();
+    toast("Se abrió tu correo para enviar el mensaje ✦");
+  });
+
+  /* ---------- Inicio ---------- */
+  $("#year").textContent = new Date().getFullYear();
+  renderCatalog();
+  renderCart();
+  renderAccountUI();
 })();

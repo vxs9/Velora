@@ -1,109 +1,127 @@
-# 📈 Impulsa
+# ✦ ÁUREA — Tienda online
 
-**Sales Tutoring & Market Intelligence** — *Aprende a vender y descubre dónde crecer.*
+Tienda online elegante, pensada para transmitir confianza y profesionalidad.
+Construida desde cero, sin dependencias externas, y publicada gratis en GitHub Pages.
 
-> Aplicación web bilingüe (Español / English) para vender cursos de tutoría en
-> ventas, con un **Explorador de Mercados** que indica en qué país es el mejor
-> "punto caliente" para vender según el mes del año.
->
-> A bilingual (Spanish / English) web app for selling sales-tutoring courses,
-> featuring a **Market Explorer** that shows which country is the hottest
-> selling opportunity for each month of the year.
+> **¿No te gusta el nombre?** Decímelo y lo cambio en minutos. Algunas alternativas
+> que también transmiten elegancia: **Velora**, **Nordelle**, **Ambra**, **Lumina**, **Solaria**.
 
 ---
 
-## 🇪🇸 Español
+## Qué incluye la tienda
 
-### ¿Qué hace?
-- **Explorador de Mercados:** elige un mes y una región y la app calcula un
-  **Índice de Oportunidad (0–100)** para 12 países y los ordena del mejor al peor.
-- El índice **cambia automáticamente cada mes** según ciclos de negocio reales
-  (cierre de año fiscal, temporadas, hemisferio norte/sur, festividades).
-- **Detalle por país:** gráfico de tendencia de 12 meses + desglose de factores.
-- **Cursos:** 4 programas de tutoría con niveles, precios y resultados.
-- **Bilingüe:** botón `ES / EN` que traduce toda la interfaz (recuerda tu elección).
-- **Secciones:** biografías del equipo, metodología transparente y formulario de contacto.
-
-### Cómo ejecutarla
-No necesita instalación ni servidor. Basta con abrir el archivo:
-
-```
-Abre index.html en cualquier navegador moderno.
-```
-
-Para publicarla gratis en internet con **GitHub Pages**:
-1. Settings → Pages → Source: `Deploy from a branch`.
-2. Branch: la rama de este proyecto, carpeta `/ (root)`.
-3. En unos minutos tendrás una URL pública.
-
-### Cómo editar los datos
-Todo el contenido editable está en 3 archivos, sin tocar código complejo:
-
-| Quiero cambiar… | Archivo |
+| Función | Detalle |
 |---|---|
-| Países, índice por mes, factores, cursos | `assets/js/data.js` |
-| Cualquier texto / traducción | `assets/js/i18n.js` |
-| Colores y estilo | `assets/css/styles.css` |
+| 🛍️ Catálogo | Con buscador, filtros por categoría y sección de Ofertas automática |
+| 🛒 Carrito | Lateral, con cantidades, subtotal y persistencia (no se pierde al recargar) |
+| ☰ Menú de 3 barritas | Con secciones: Inicio, Catálogo, Ofertas, Sobre nosotros, Contacto, Mi cuenta |
+| 👤 Cuentas | Registro e inicio de sesión, con contraseñas protegidas criptográficamente |
+| ⚙ Panel del creador | Solo visible para tu usuario: agregar, editar y borrar productos sin tocar código |
+| 💳 Checkout | Formulario de compra + integración con links de pago (Mercado Pago / Stripe / PayPal) |
+| 🔒 Privacidad | Política de privacidad incluida y defensas técnicas activas (ver abajo) |
 
-**Para tu biografía y la de tu socio:** edita las claves `about.p1.*` y
-`about.p2.*` en `assets/js/i18n.js` (versión en español **y** en inglés).
+## Tu usuario como creador
 
-### ⚠️ Nota honesta sobre los datos
-Los índices son un **modelo curado con fines educativos**, no datos financieros
-en vivo. Obtener datos de mercado reales mes a mes requeriría una API de pago y
-un servidor backend. El modelo actual es realista, **sí varía cada mes** y es
-totalmente editable por ti en `data.js`.
+1. Entrá a la tienda y tocá **Entrar** (arriba a la derecha) → **Crear cuenta**.
+2. Registrate con el email **vicente.empres4@gmail.com** (el que está configurado como creador).
+3. Al iniciar sesión con ese email vas a ver el **⚙ Panel del creador** en el menú de 3 barritas,
+   donde podés cargar tus productos: nombre, precio, precio anterior (para ofertas), stock,
+   foto (URL), emoji y link de pago.
 
----
+Los cambios del panel se guardan en tu navegador. Cuando tengas el catálogo definitivo,
+usá **Exportar catálogo**, pasame el texto en el chat y lo dejo fijo en el sitio para que
+lo vean todos los visitantes desde cualquier dispositivo.
 
-## 🇬🇧 English
-
-### What it does
-- **Market Explorer:** pick a month and region; the app computes an
-  **Opportunity Index (0–100)** for 12 countries and ranks them.
-- The index **changes automatically each month** based on real business cycles
-  (fiscal year-ends, seasons, northern/southern hemisphere, holidays).
-- **Country detail:** 12-month trend chart + factor breakdown.
-- **Courses:** 4 tutoring programs with levels, prices and outcomes.
-- **Bilingual:** an `ES / EN` toggle translates the whole UI (choice is remembered).
-- **Sections:** team bios, a transparent methodology and a contact form.
-
-### How to run it
-No build, no server needed — just open `index.html` in any modern browser.
-To publish it for free, enable **GitHub Pages** (Settings → Pages → deploy from
-this branch, root folder).
-
-### How to edit the data
-Everything lives in three files: `assets/js/data.js` (countries, monthly index,
-courses), `assets/js/i18n.js` (all text & translations) and
-`assets/css/styles.css` (look & feel). Team bios are the `about.p1.*` /
-`about.p2.*` keys in `i18n.js`.
-
-### ⚠️ Honest note about the data
-The indices are a **curated educational model**, not live financial data. Real
-month-by-month market data would need a paid API and a backend. The current
-model is realistic, updates every month, and is fully editable in `data.js`.
+> Para cambiar el email del creador: editá `creatorEmail` en `assets/js/data.js`.
 
 ---
 
-## 📁 Structure
+## 💰 Cómo cobrar el dinero (y cuánto cuesta)
+
+La buena noticia: **no necesitás poner dinero para empezar a cobrar**. Los procesadores
+de pago no cobran por abrir la cuenta, solo una comisión cuando efectivamente vendés.
+
+### Opción recomendada: links de pago (sin programación, sin servidor)
+
+1. **Creá una cuenta gratis** en uno de estos (según tu país):
+   - **Mercado Pago** — el más usado en Latinoamérica. Comisión aprox. **3,5 % – 6,5 %** por venta según cuándo quieras recibir el dinero.
+   - **Stripe** — internacional, muy profesional. Comisión aprox. **2,9 % + US$ 0,30** por venta.
+   - **PayPal** — bueno para ventas al exterior. Comisión aprox. **3,5 % – 5,4 %**.
+2. **Qué te van a pedir:** documento de identidad, una cuenta bancaria (CBU/CVU/IBAN según país)
+   para depositarte el dinero, y datos básicos. Si vendés como persona no hace falta tener empresa;
+   más adelante, si crece, conviene registrarse como monotributista/autónomo para facturar.
+3. **Generá un "link de pago"** desde la app o web del procesador (ellos lo hacen en 1 minuto:
+   ponés nombre del producto y precio, te dan un link `https://mpago.la/...` o `https://buy.stripe.com/...`).
+4. **Pegá ese link en tu tienda**: en el Panel del creador, editá el producto y completá el campo
+   **Link de pago**. También podés poner un link general en `checkoutUrl` dentro de `assets/js/data.js`.
+5. Listo: cuando alguien finaliza la compra, la tienda lo lleva a pagar a la plataforma segura
+   y a vos te llega un email con el detalle del pedido (productos, total, datos de entrega).
+
+### ¿Cuánto dinero necesito poner?
+
+| Concepto | Costo |
+|---|---|
+| Hosting del sitio (GitHub Pages) | **$0** |
+| Cuenta en Mercado Pago / Stripe / PayPal | **$0** (solo comisión por venta) |
+| La tienda (este código) | **$0** |
+| **Total obligatorio para arrancar** | **$0** |
+| Dominio propio, ej. `aurea.shop` (opcional, más profesional) | US$ 10–15 por año |
+| Stock inicial de productos (si comprás para revender) | Depende de vos: se puede arrancar con poco (ej. US$ 100–200) o con dropshipping, sin stock |
+
+---
+
+## 📈 Qué conviene vender (productos "que pegan")
+
+Criterio: alta demanda constante, buen margen, livianos de enviar y fáciles de fotografiar bien.
+El catálogo de ejemplo ya viene cargado con estas categorías:
+
+1. **Accesorios de tecnología** — auriculares inalámbricos, smartwatches, cargadores, fundas.
+   Se venden todo el año y la gente los compra por impulso.
+2. **Hogar y ambiente** — lámparas LED, difusores aromáticos, organizadores. Categoría estrella
+   post-pandemia; muy buscada en redes.
+3. **Cuidado personal / skincare** — sets de rutina facial, botellas térmicas. Alta recompra:
+   el mismo cliente vuelve a comprar.
+4. **Accesorios personales** — joyería minimalista, billeteras slim. Margen altísimo
+   (se compra barato, se vende con 2–3× de ganancia) y sirven para regalo.
+5. **Fitness** — bandas elásticas, esterillas de yoga. Picos en enero y antes del verano.
+
+**Consejos para vender más:** empezá con pocas cosas (10–15 productos) bien elegidas y con
+buenas fotos; mantené siempre alguna oferta activa (la sección Ofertas la arma sola cuando
+un producto tiene precio anterior); y difundí el link de la tienda en Instagram/TikTok con
+videos cortos mostrando el producto en uso — es el canal que más tráfico gratuito trae.
+
+---
+
+## 🔒 Defensa de la información personal
+
+Defensas técnicas ya activas en el sitio:
+
+- **Contraseñas nunca en texto plano**: se derivan con **PBKDF2 (100.000 iteraciones, SHA-256)
+  y sal aleatoria única** por usuario. Ni siquiera el creador puede leerlas.
+- **Los datos no salen del dispositivo del visitante**: cuentas y carrito viven solo en el
+  navegador de cada persona. No hay base de datos central que pueda ser robada.
+- **Las tarjetas nunca tocan la tienda**: el pago ocurre en Mercado Pago/Stripe/PayPal,
+  plataformas certificadas **PCI-DSS** (el estándar de seguridad de la industria de tarjetas).
+- **Content Security Policy estricta**: el navegador bloquea cualquier script externo o
+  inyectado, la principal vía de robo de datos en tiendas online (ataques tipo Magecart).
+- **Escapado de todo dato dinámico** al renderizar: previene ataques XSS.
+- **Sin rastreadores**: cero cookies publicitarias, cero analítica de terceros, cero píxeles.
+- **HTTPS obligatorio**: GitHub Pages sirve el sitio siempre cifrado.
+- **Minimización de datos**: solo se pide lo imprescindible (nombre, email y, al comprar,
+  teléfono y dirección). Menos datos guardados = menos datos que proteger.
+- **Política de privacidad visible** en el menú y el pie de página, en lenguaje claro.
+
+## Cómo se publica
+
+Cada `push` a la rama `claude/ecommerce-app-rebuild-5gddvc` despliega automáticamente a
+GitHub Pages (workflow en `.github/workflows/deploy.yml`). El repositorio debe estar en
+**Público** para que Pages funcione gratis.
+
+## Estructura del proyecto
 
 ```
-aplicacion-ingles/
-├── index.html              # Page structure
-├── assets/
-│   ├── css/styles.css      # Warm design system
-│   └── js/
-│       ├── data.js         # ← EDIT: countries, indices, courses
-│       ├── i18n.js         # ← EDIT: all text & translations (incl. bios)
-│       └── app.js          # App logic (rendering, i18n, charts)
-└── README.md
+index.html              → estructura de la página (una sola página, todas las secciones)
+assets/css/styles.css   → diseño (paleta marfil / tinta / dorado)
+assets/js/data.js       → configuración de la tienda + catálogo inicial (editable)
+assets/js/app.js        → lógica: carrito, cuentas, panel del creador, checkout
 ```
-
-## 🎨 Brand
-- **Name:** Impulsa
-- **Slogan (ES):** *Aprende a vender y descubre dónde crecer.*
-- **Slogan (EN):** *Learn to sell — and discover where to grow.*
-- **Contact (fictional):** `hola@impulsaventas.com`
-
-*Educational project — all data is illustrative.*

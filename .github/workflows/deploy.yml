@@ -1,10 +1,10 @@
-name: Deploy Impulsa to GitHub Pages
+name: Deploy Áurea to GitHub Pages
 
-# Publishes the site automatically. Once the repository is Public,
-# this workflow enables GitHub Pages by itself and deploys on every push.
+# Publica la tienda automáticamente. Con el repositorio en Público,
+# este workflow habilita GitHub Pages solo y despliega en cada push.
 on:
   push:
-    branches: ["claude/sales-tutoring-app-xxtsvm"]
+    branches: ["claude/ecommerce-app-rebuild-5gddvc"]
   workflow_dispatch:
 
 permissions:
@@ -12,7 +12,7 @@ permissions:
   pages: write
   id-token: write
 
-# Allow one concurrent deployment
+# Un solo despliegue a la vez
 concurrency:
   group: "pages"
   cancel-in-progress: false
