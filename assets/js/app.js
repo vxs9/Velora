@@ -444,6 +444,7 @@
     overlay.classList.remove("show");
     overlay.hidden = true;
     $("#modal").hidden = true;
+    stopScanner(); // apaga la cámara si el escáner estaba abierto
   }
 
   function openModal(html) {
@@ -944,6 +945,7 @@
           (Number(p.cost) ? " · ganancia " + esc(money(Number(p.price) - Number(p.cost))) + "/ud." : "") + "</span>" +
           '<span class="small">Stock: <strong>' + Number(p.stock) + "</strong> (" + pct + "%)" +
           (isLow ? ' <span style="color:#b0433f">⚠ reponer</span>' : "") +
+          (p.barcode ? ' · 🏷 ' + esc(p.barcode) : "") +
           (p.providerLink ? ' · <a href="' + esc(p.providerLink) + '" target="_blank" rel="noopener noreferrer">proveedor ↗</a>' : "") +
           "</span></div>" +
           '<div class="actions">' +
@@ -1029,6 +1031,8 @@
       '<div class="form-card"><h4>Inventario</h4><div class="form-grid">' +
       field("Stock disponible", "unidades que tenés para vender; 0 = agotado",
         '<input class="input" id="pfStock" type="number" min="0" step="1" required value="' + esc(p.stock) + '">') +
+      field("Código de barras", "el del empaque del producto; sirve para el escáner de stock en Gestión",
+        '<input class="input" id="pfBarcode" maxlength="30" placeholder="Ej: 7801234567890" value="' + esc(p.barcode || "") + '">') +
       "</div></div>" +
 
       '<div class="form-card"><h4>Valoración del proveedor</h4><div class="form-grid">' +
@@ -1082,6 +1086,7 @@
         image: img,
         paymentLink: pay,
         providerLink: prov,
+        barcode: $("#pfBarcode").value.trim(),
         desc: $("#pfDesc").value.trim()
       };
       // Registra el cambio de stock como movimiento de gestión.
@@ -1198,8 +1203,9 @@
       '<div class="tile"><span>Stock actual (' + stockUnits + ' uds.)</span><strong>' + esc(money(stockValue)) + " invertidos</strong></div>" +
       "</div>" +
       '<div class="account-actions" style="margin-bottom:1rem">' +
+      '<button class="btn btn-primary btn-sm" id="dashScan">📷 Escáner de stock</button>' +
       '<button class="btn btn-gold btn-sm" id="dashSale">➕ Registrar venta</button>' +
-      '<button class="btn btn-primary btn-sm" id="dashIntake">📦 Registrar ingreso</button>' +
+      '<button class="btn btn-gold btn-sm" id="dashIntake">📦 Registrar ingreso</button>' +
       '<button class="btn btn-outline btn-sm" id="dashCSV">⬇ Exportar a Excel</button>' +
       "</div>" +
       '<div class="form-card">' +
@@ -1220,9 +1226,153 @@
   }
 
   function wireAdminDash() {
+    $("#dashScan").addEventListener("click", scannerModal);
     $("#dashSale").addEventListener("click", function () { moveForm("venta"); });
     $("#dashIntake").addEventListener("click", function () { moveForm("ingreso"); });
     $("#dashCSV").addEventListener("click", exportMovesCSV);
+  }
+
+  /* ==========================================================================
+     ESCÁNER DE STOCK
+     --------------------------------------------------------------------------
+     Lee el código de barras del empaque con la cámara (BarcodeDetector,
+     Chrome/Android) o por el campo manual (sirve para pistolas USB, que
+     escriben el código como un teclado). Cada lectura registra una venta
+     (−1) o un ingreso (+1) según el modo elegido. Códigos desconocidos se
+     pueden vincular a un producto en el momento.
+     ========================================================================== */
+  var scanState = { stream: null, timer: null, mode: "venta", lastCode: "", lastAt: 0 };
+
+  function stopScanner() {
+    if (scanState.timer) { clearInterval(scanState.timer); scanState.timer = null; }
+    if (scanState.stream) {
+      scanState.stream.getTracks().forEach(function (t) { t.stop(); });
+      scanState.stream = null;
+    }
+  }
+
+  function scannerModal() {
+    if (!isCreator()) return;
+    scanState.mode = "venta";
+    openModal(
+      "<h3>📷 Escáner de stock</h3>" +
+      '<div class="scan-modes">' +
+      '<button class="btn btn-sm btn-danger" id="scanModeSale">➖ Venta (descuenta 1)</button>' +
+      '<button class="btn btn-sm btn-outline" id="scanModeIn">➕ Ingreso (suma 1)</button>' +
+      "</div>" +
+      '<div class="scan-cam" id="scanCam"><video id="scanVideo" playsinline muted></video>' +
+      '<p class="muted small" id="scanCamMsg">Iniciando cámara…</p></div>' +
+      '<form id="scanForm">' +
+      '<input class="input" id="scanInput" placeholder="…o escribí / pistoleá el código acá y Enter" autocomplete="off">' +
+      "</form>" +
+      '<div id="scanAssign" hidden>' +
+      '<p class="form-error">Código nuevo: <strong id="scanNewCode"></strong>. ¿De qué producto es?</p>' +
+      '<div style="display:flex;gap:.5rem;flex-wrap:wrap">' +
+      '<select class="input" id="scanProduct" style="flex:1">' +
+      getProducts().map(function (p) {
+        return '<option value="' + esc(p.id) + '">' + esc(p.name) + "</option>";
+      }).join("") +
+      "</select>" +
+      '<button class="btn btn-sm btn-gold" id="scanLink">Vincular</button>' +
+      "</div></div>" +
+      '<div class="scan-log" id="scanLog"></div>' +
+      '<p class="muted small">💡 La mayoría de los productos de Temu/AliExpress ya traen su código impreso en el empaque: usá ese. El modo elegido se mantiene entre lecturas, así podés escanear varios seguidos.</p>'
+    );
+
+    function setMode(mode) {
+      scanState.mode = mode;
+      $("#scanModeSale").className = "btn btn-sm " + (mode === "venta" ? "btn-danger" : "btn-outline");
+      $("#scanModeIn").className = "btn btn-sm " + (mode === "ingreso" ? "btn-gold" : "btn-outline");
+    }
+    $("#scanModeSale").addEventListener("click", function () { setMode("venta"); });
+    $("#scanModeIn").addEventListener("click", function () { setMode("ingreso"); });
+
+    function log(text, ok) {
+      var div = document.createElement("div");
+      div.className = "scan-entry " + (ok ? "scan-ok" : "scan-bad");
+      div.textContent = text;
+      var box = $("#scanLog");
+      box.insertBefore(div, box.firstChild);
+      while (box.children.length > 6) box.removeChild(box.lastChild);
+    }
+
+    function handleCode(code) {
+      code = String(code || "").trim();
+      if (!code) return;
+      // Evita registrar dos veces el mismo código en menos de 2 segundos
+      var now = Date.now();
+      if (code === scanState.lastCode && now - scanState.lastAt < 2000) return;
+      scanState.lastCode = code;
+      scanState.lastAt = now;
+
+      var prod = null;
+      getProducts().forEach(function (p) { if (String(p.barcode || "") === code) prod = p; });
+
+      if (!prod) {
+        $("#scanNewCode").textContent = code;
+        $("#scanAssign").hidden = false;
+        log("❓ Código " + code + " sin producto vinculado", false);
+        return;
+      }
+      $("#scanAssign").hidden = true;
+
+      if (scanState.mode === "venta") {
+        if (Number(prod.stock) <= 0) { log("⛔ " + prod.name + ": sin stock para descontar", false); return; }
+        recordSale(prod.id, 1, true);
+        var after = findProduct(prod.id);
+        log("➖ Venta: " + prod.name + " → quedan " + Number(after.stock), true);
+      } else {
+        recordIntake(prod.id, 1, 0);
+        var after2 = findProduct(prod.id);
+        log("➕ Ingreso: " + prod.name + " → ahora " + Number(after2.stock), true);
+      }
+      if (navigator.vibrate) navigator.vibrate(60);
+      renderCatalog();
+      notifyLowStock();
+    }
+
+    $("#scanForm").addEventListener("submit", function (e) {
+      e.preventDefault();
+      handleCode($("#scanInput").value);
+      $("#scanInput").value = "";
+      $("#scanInput").focus();
+    });
+
+    $("#scanLink").addEventListener("click", function () {
+      var code = $("#scanNewCode").textContent;
+      var pid = $("#scanProduct").value;
+      var list = getProducts().slice();
+      for (var i = 0; i < list.length; i++) if (list[i].id === pid) list[i].barcode = code;
+      saveProducts(list);
+      $("#scanAssign").hidden = true;
+      scanState.lastCode = ""; // permite registrar el código recién vinculado
+      log("🏷 Código vinculado. Escanealo de nuevo para registrar.", true);
+    });
+
+    // Cámara: solo si el navegador la soporta (Chrome en Android/desktop)
+    var video = $("#scanVideo");
+    if ("BarcodeDetector" in window && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+        .then(function (stream) {
+          scanState.stream = stream;
+          video.srcObject = stream;
+          video.play();
+          $("#scanCamMsg").textContent = "Apuntá la cámara al código de barras";
+          var detector = new BarcodeDetector();
+          scanState.timer = setInterval(function () {
+            if ($("#modal").hidden) { stopScanner(); return; }
+            detector.detect(video).then(function (codes) {
+              if (codes.length) handleCode(codes[0].rawValue);
+            }).catch(function () { /* frame no legible */ });
+          }, 400);
+        })
+        .catch(function () {
+          $("#scanCamMsg").textContent = "No se pudo abrir la cámara (permiso denegado). Usá el campo manual de abajo.";
+        });
+    } else {
+      $("#scanCamMsg").textContent = "Este navegador no escanea con cámara (usá Chrome en Android). El campo manual funciona igual, y sirve con pistolas lectoras USB.";
+    }
+    $("#scanInput").focus();
   }
 
   /* Formulario para registrar una venta o un ingreso de stock a mano. */
