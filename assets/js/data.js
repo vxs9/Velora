@@ -45,10 +45,13 @@ var CONFIG = {
                   cargues tus productos reales, copiá la valoración real del
                   listing de tu proveedor (editable en el Panel del creador).
     ratingCount — cantidad de valoraciones que muestra ese listing
+    cost        — costo por unidad pagado al proveedor (privado; se usa para
+                  calcular las ganancias en el panel de Gestión)
 */
 var PRODUCTS = [
   {
     id: "p1",
+    cost: 12000,
     rating: 4.7,
     ratingCount: 2341,
     name: "Auriculares inalámbricos Pro",
@@ -63,6 +66,7 @@ var PRODUCTS = [
   },
   {
     id: "p2",
+    cost: 16000,
     rating: 4.6,
     ratingCount: 1876,
     name: "Smartwatch Serie S",
@@ -77,6 +81,7 @@ var PRODUCTS = [
   },
   {
     id: "p3",
+    cost: 6500,
     rating: 4.8,
     ratingCount: 3120,
     name: "Lámpara LED ambiente",
@@ -91,6 +96,7 @@ var PRODUCTS = [
   },
   {
     id: "p4",
+    cost: 5500,
     rating: 4.7,
     ratingCount: 1543,
     name: "Difusor aromático premium",
@@ -105,6 +111,7 @@ var PRODUCTS = [
   },
   {
     id: "p5",
+    cost: 7500,
     rating: 4.6,
     ratingCount: 987,
     name: "Set de skincare esencial",
@@ -119,6 +126,7 @@ var PRODUCTS = [
   },
   {
     id: "p6",
+    cost: 4500,
     rating: 4.8,
     ratingCount: 4215,
     name: "Botella térmica 750 ml",
@@ -133,6 +141,7 @@ var PRODUCTS = [
   },
   {
     id: "p7",
+    cost: 3500,
     rating: 4.7,
     ratingCount: 1298,
     name: "Collar minimalista bañado en oro",
@@ -147,6 +156,7 @@ var PRODUCTS = [
   },
   {
     id: "p8",
+    cost: 5000,
     rating: 4.6,
     ratingCount: 856,
     name: "Billetera slim de cuero",
@@ -161,6 +171,7 @@ var PRODUCTS = [
   },
   {
     id: "p9",
+    cost: 3000,
     rating: 4.8,
     ratingCount: 2764,
     name: "Banda elástica fitness (set x5)",
@@ -175,6 +186,7 @@ var PRODUCTS = [
   },
   {
     id: "p10",
+    cost: 6000,
     rating: 4.7,
     ratingCount: 1432,
     name: "Esterilla de yoga antideslizante",

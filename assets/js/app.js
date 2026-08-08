@@ -29,7 +29,8 @@
     cart: "aurea_cart",
     users: "aurea_users",
     session: "aurea_session",
-    reviews: "aurea_reviews"
+    reviews: "aurea_reviews",
+    moves: "aurea_moves"
   };
 
   /* ---------- Utilidades ---------- */
@@ -102,6 +103,86 @@
     for (var i = 0; i < local.length; i++) sum += Number(local[i].stars) || 0;
     return { rating: Math.round((sum / count) * 10) / 10, count: count };
   }
+
+  /* ==========================================================================
+     GESTIÓN: movimientos de stock (ventas / ingresos / ajustes) y ganancias
+     --------------------------------------------------------------------------
+     Cada movimiento: { date: "YYYY-MM-DD", id, name, type, qty, price, cost }
+     type: "venta" (sale), "ingreso" (restock), "ajuste" (manual correction)
+     ========================================================================== */
+  function getMoves() { return store.get(KEYS.moves, []); }
+
+  function addMove(m) {
+    var list = getMoves();
+    list.push(m);
+    store.set(KEYS.moves, list);
+  }
+
+  function today() { return new Date().toISOString().slice(0, 10); }
+
+  /* % de stock restante respecto del último ingreso (baseline maxStock). */
+  function stockPct(p) {
+    var max = Number(p.maxStock) || Number(p.stock) || 0;
+    if (!max) return 0;
+    return Math.round((Number(p.stock) / max) * 100);
+  }
+
+  function lowStockProducts() {
+    return getProducts().filter(function (p) {
+      var max = Number(p.maxStock) || 0;
+      return max > 0 && Number(p.stock) / max <= 0.30;
+    });
+  }
+
+  function notifyLowStock() {
+    if (!isCreator()) return;
+    var low = lowStockProducts();
+    if (low.length) {
+      toast("⚠ Stock bajo (≤30%): " + low.map(function (p) { return p.name; }).join(", "));
+    }
+  }
+
+  /* Registra una venta: baja stock y guarda el movimiento con precio y costo. */
+  function recordSale(id, qty, silent) {
+    var list = getProducts().slice();
+    for (var i = 0; i < list.length; i++) {
+      if (list[i].id === id) {
+        var p = list[i];
+        if (p.maxStock == null) p.maxStock = Number(p.stock) || 0;
+        var sold = Math.min(qty, Number(p.stock) || 0);
+        if (sold <= 0) return;
+        p.stock = Number(p.stock) - sold;
+        saveProducts(list);
+        addMove({
+          date: today(), id: p.id, name: p.name, type: "venta",
+          qty: sold, price: Number(p.price) || 0, cost: Number(p.cost) || 0
+        });
+        if (!silent) notifyLowStock();
+        return;
+      }
+    }
+  }
+
+  /* Registra un ingreso de stock: sube stock y resetea la base del 30%. */
+  function recordIntake(id, qty, newCost) {
+    var list = getProducts().slice();
+    for (var i = 0; i < list.length; i++) {
+      if (list[i].id === id) {
+        var p = list[i];
+        p.stock = (Number(p.stock) || 0) + qty;
+        p.maxStock = Number(p.stock);
+        if (newCost > 0) p.cost = newCost;
+        saveProducts(list);
+        addMove({
+          date: today(), id: p.id, name: p.name, type: "ingreso",
+          qty: qty, price: Number(p.price) || 0, cost: Number(p.cost) || 0
+        });
+        return;
+      }
+    }
+  }
+
+  /* ---------- Estado ---------- */
   var state = {
     category: "Todo",
     search: "",
@@ -528,6 +609,8 @@
           setSession({ email: email, name: u.name });
           closeAll();
           toast("Hola de nuevo, " + u.name.split(" ")[0] + " ✦");
+          // Al creador se le avisa apenas entra si hay productos al 30% o menos.
+          setTimeout(notifyLowStock, 2800);
         });
       } else {
         var name = $("#authName").value.trim();
@@ -568,12 +651,15 @@
       '<div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-top:1rem">' +
       '<button class="btn btn-primary" id="accProfile">Editar mis datos</button>' +
       (isCreator() ? '<button class="btn btn-gold" id="accAdmin">Panel del creador</button>' : "") +
+      (isCreator() ? '<button class="btn btn-gold" id="accDash">📊 Gestión</button>' : "") +
       '<button class="btn btn-outline" id="accLogout">Cerrar sesión</button>' +
       "</div>"
     );
     $("#accProfile").addEventListener("click", profileForm);
     var adminBtn = $("#accAdmin");
     if (adminBtn) adminBtn.addEventListener("click", adminPanel);
+    var dashBtn = $("#accDash");
+    if (dashBtn) dashBtn.addEventListener("click", dashboard);
     $("#accLogout").addEventListener("click", function () {
       setSession(null);
       closeAll();
@@ -617,7 +703,12 @@
     openModal(
       "<h3>⚙ Panel del creador</h3>" +
       '<p class="muted small">Agregá, editá o quitá productos del catálogo. Los cambios se guardan en este navegador; para hacerlos permanentes para todos los visitantes, exportá el catálogo y pedime que lo suba al sitio.</p>' +
+      (lowStockProducts().length
+        ? '<div class="alert-low">⚠ <strong>Stock bajo:</strong> ' +
+          lowStockProducts().map(function (p) { return esc(p.name) + " (" + stockPct(p) + "%)"; }).join(", ") + "</div>"
+        : "") +
       '<div style="display:flex;gap:.6rem;flex-wrap:wrap;margin:1rem 0">' +
+      '<button class="btn btn-primary btn-sm" id="admDash">📊 Gestión y ganancias</button>' +
       '<button class="btn btn-gold btn-sm" id="admNew">＋ Nuevo producto</button>' +
       '<button class="btn btn-outline btn-sm" id="admExport">Exportar catálogo</button>' +
       '<button class="btn btn-outline btn-sm" id="admReset">Restaurar original</button>' +
@@ -637,6 +728,7 @@
       '<div class="admin-note">💡 <strong>Para cobrar de verdad:</strong> creá tu cuenta gratis en Mercado Pago o Stripe, generá un "link de pago" por producto y pegalo en el campo "Link de pago" al editar cada producto. El botón de pagar del checkout llevará a tus clientes directo ahí. Los detalles están en el README del proyecto.</div>'
     );
 
+    $("#admDash").addEventListener("click", dashboard);
     $("#admNew").addEventListener("click", function () { productForm(null); });
     $("#admExport").addEventListener("click", exportCatalog);
     $("#admReset").addEventListener("click", function () {
@@ -677,7 +769,8 @@
       '<form id="prodForm">' +
       '<input class="input" id="pfName" placeholder="Nombre" required maxlength="90" value="' + esc(p.name) + '">' +
       '<input class="input" id="pfCat" placeholder="Categoría (ej: Tecnología)" required maxlength="40" value="' + esc(p.category) + '">' +
-      '<input class="input" id="pfPrice" type="number" min="0" step="0.01" placeholder="Precio" required value="' + esc(p.price) + '">' +
+      '<input class="input" id="pfPrice" type="number" min="0" step="0.01" placeholder="Precio de venta" required value="' + esc(p.price) + '">' +
+      '<input class="input" id="pfCost" type="number" min="0" step="0.01" placeholder="Costo por unidad (privado, para calcular ganancias)" value="' + esc(p.cost || "") + '">' +
       '<input class="input" id="pfOld" type="number" min="0" step="0.01" placeholder="Precio anterior (opcional, para ofertas)" value="' + esc(p.oldPrice || "") + '">' +
       '<input class="input" id="pfStock" type="number" min="0" step="1" placeholder="Stock" required value="' + esc(p.stock) + '">' +
       '<input class="input" id="pfRating" type="number" min="0" max="5" step="0.1" placeholder="Valoración del producto (0 a 5, la del listing del proveedor)" value="' + esc(p.rating || "") + '">' +
@@ -698,13 +791,19 @@
       if (img && img.indexOf("https://") !== 0) { toast("La imagen debe empezar con https://"); return; }
       if (pay && pay.indexOf("https://") !== 0) { toast("El link de pago debe empezar con https://"); return; }
       if (prov && prov.indexOf("https://") !== 0) { toast("El link del proveedor debe empezar con https://"); return; }
+      var newStock = Math.max(0, Math.floor(Number($("#pfStock").value) || 0));
+      var oldStock = id ? Number(p.stock) || 0 : 0;
       var next = {
         id: p.id,
         name: $("#pfName").value.trim(),
         category: $("#pfCat").value.trim(),
         price: Number($("#pfPrice").value) || 0,
+        cost: Number($("#pfCost").value) || 0,
         oldPrice: Number($("#pfOld").value) || 0,
-        stock: Math.max(0, Math.floor(Number($("#pfStock").value) || 0)),
+        stock: newStock,
+        // Si el stock sube (o el producto es nuevo), esa cifra pasa a ser la
+        // base para el aviso del 30%; si baja o queda igual, se conserva.
+        maxStock: newStock > oldStock ? newStock : (Number(p.maxStock) || newStock),
         rating: Math.max(0, Math.min(5, Number($("#pfRating").value) || 0)),
         ratingCount: Math.max(0, Math.floor(Number($("#pfRatingCount").value) || 0)),
         emoji: $("#pfEmoji").value.trim() || "🛍️",
@@ -713,6 +812,15 @@
         providerLink: prov,
         desc: $("#pfDesc").value.trim()
       };
+      // Registra el cambio de stock como movimiento de gestión.
+      if (newStock !== oldStock) {
+        addMove({
+          date: today(), id: p.id, name: next.name,
+          type: newStock > oldStock ? "ingreso" : "ajuste",
+          qty: Math.abs(newStock - oldStock),
+          price: next.price, cost: next.cost
+        });
+      }
       var list = getProducts().slice();
       var idx = -1;
       for (var i = 0; i < list.length; i++) if (list[i].id === p.id) idx = i;
@@ -723,6 +831,189 @@
       adminPanel();
       toast(id ? "Producto actualizado" : "Producto agregado al catálogo");
     });
+  }
+
+  /* ==========================================================================
+     PANEL DE GESTIÓN (solo creador): stock, movimientos, ganancias y gráfico
+     ========================================================================== */
+  function dashboard() {
+    if (!isCreator()) { toast("Solo el creador puede entrar acá"); return; }
+    var moves = getMoves();
+    var sales = moves.filter(function (m) { return m.type === "venta"; });
+
+    // --- Totales ---
+    var revenue = 0, profit = 0, units = 0;
+    sales.forEach(function (m) {
+      revenue += m.price * m.qty;
+      profit += (m.price - m.cost) * m.qty;
+      units += m.qty;
+    });
+    var stockValue = 0, stockUnits = 0;
+    getProducts().forEach(function (p) {
+      stockValue += (Number(p.cost) || 0) * (Number(p.stock) || 0);
+      stockUnits += Number(p.stock) || 0;
+    });
+
+    // --- Ganancia por día (últimos 14 días) para el gráfico ---
+    var days = [];
+    var now = new Date();
+    for (var d = 13; d >= 0; d--) {
+      var dt = new Date(now.getTime() - d * 86400000);
+      days.push(dt.toISOString().slice(0, 10));
+    }
+    var byDay = {};
+    days.forEach(function (k) { byDay[k] = 0; });
+    sales.forEach(function (m) {
+      if (byDay[m.date] !== undefined) byDay[m.date] += (m.price - m.cost) * m.qty;
+    });
+    var maxDay = 0;
+    days.forEach(function (k) { if (byDay[k] > maxDay) maxDay = byDay[k]; });
+
+    // --- Incremento: última semana vs semana anterior ---
+    var lastWeek = 0, prevWeek = 0;
+    days.forEach(function (k, i) {
+      if (i < 7) prevWeek += byDay[k]; else lastWeek += byDay[k];
+    });
+    var growth = prevWeek > 0
+      ? Math.round(((lastWeek - prevWeek) / prevWeek) * 100)
+      : (lastWeek > 0 ? 100 : 0);
+
+    var chartHTML = '<div class="chart-bars">' + days.map(function (k, i) {
+      var h = maxDay > 0 ? Math.max(2, Math.round(byDay[k] / maxDay * 100)) : 2;
+      var label = k.slice(8, 10) + "/" + k.slice(5, 7);
+      return '<div class="chart-col" title="' + esc(label + ": " + money(byDay[k])) + '">' +
+        '<div class="bar" style="height:' + h + '%"></div>' +
+        (i % 2 ? "" : '<span class="bar-label">' + esc(label) + "</span>") +
+        "</div>";
+    }).join("") + "</div>";
+
+    // --- Tabla de stock con alerta al 30% ---
+    var low = lowStockProducts();
+    var soldById = {};
+    sales.forEach(function (m) { soldById[m.id] = (soldById[m.id] || 0) + m.qty; });
+    var stockRows = getProducts().map(function (p) {
+      var pct = stockPct(p);
+      var isLow = Number(p.maxStock) > 0 && pct <= 30;
+      return '<tr' + (isLow ? ' class="row-low"' : "") + ">" +
+        "<td>" + esc(p.emoji || "🛍️") + " " + esc(p.name) + "</td>" +
+        '<td class="num">' + Number(p.stock) + "</td>" +
+        '<td class="num">' + (soldById[p.id] || 0) + "</td>" +
+        '<td class="num">' + pct + "%" + (isLow ? " ⚠" : "") + "</td>" +
+        '<td class="num">' + esc(money((Number(p.price) - (Number(p.cost) || 0)))) + "</td>" +
+        "</tr>";
+    }).join("");
+
+    // --- Últimos movimientos ---
+    var lastMoves = moves.slice(-12).reverse().map(function (m) {
+      var icon = m.type === "venta" ? "🔴 −" : (m.type === "ingreso" ? "🟢 +" : "🟠 −");
+      return '<div class="move-row"><span>' + esc(m.date.slice(8, 10) + "/" + m.date.slice(5, 7)) +
+        " · " + icon + m.qty + " · " + esc(m.name) + "</span><span>" +
+        (m.type === "venta"
+          ? "+" + esc(money((m.price - m.cost) * m.qty)) + " ganancia"
+          : (m.type === "ingreso" ? "ingreso de stock" : "ajuste de stock")) + "</span></div>";
+    }).join("") || '<p class="muted small">Todavía no hay movimientos. Se registran solos con cada compra, o a mano con los botones de arriba.</p>';
+
+    openModal(
+      "<h3>📊 Gestión y ganancias</h3>" +
+      (low.length
+        ? '<div class="alert-low">⚠ <strong>Reponer pronto:</strong> ' +
+          low.map(function (p) { return esc(p.name) + " (" + stockPct(p) + "%)"; }).join(", ") +
+          " — llegaron al 30% del stock o menos.</div>"
+        : '<p class="form-ok">✔ Ningún producto bajo el 30% de stock.</p>') +
+      '<div class="dash-tiles">' +
+      '<div class="tile"><span>Ventas</span><strong>' + esc(money(revenue)) + "</strong></div>" +
+      '<div class="tile"><span>Ganancia</span><strong>' + esc(money(profit)) + "</strong></div>" +
+      '<div class="tile"><span>Unidades vendidas</span><strong>' + units + "</strong></div>" +
+      '<div class="tile"><span>Stock actual (' + stockUnits + ' uds.)</span><strong>' + esc(money(stockValue)) + " invertidos</strong></div>" +
+      "</div>" +
+      "<h3 class='dash-sub'>Ganancia por día (últimos 14 días)</h3>" +
+      chartHTML +
+      '<p class="muted small">Última semana: <strong>' + esc(money(lastWeek)) + "</strong> · Semana anterior: " +
+      esc(money(prevWeek)) + " · Incremento: <strong>" + (growth >= 0 ? "+" : "") + growth + "%</strong></p>" +
+      '<div style="display:flex;gap:.6rem;flex-wrap:wrap;margin:1rem 0">' +
+      '<button class="btn btn-gold btn-sm" id="dashSale">➕ Registrar venta</button>' +
+      '<button class="btn btn-primary btn-sm" id="dashIntake">📦 Registrar ingreso</button>' +
+      '<button class="btn btn-outline btn-sm" id="dashCSV">⬇ Exportar a Excel</button>' +
+      '<button class="btn btn-outline btn-sm" id="dashBack">← Panel del creador</button>' +
+      "</div>" +
+      '<div class="table-wrap"><table class="dash-table"><thead><tr>' +
+      "<th>Producto</th><th>Stock</th><th>Vendidos</th><th>Restante</th><th>Ganancia/ud.</th>" +
+      "</tr></thead><tbody>" + stockRows + "</tbody></table></div>" +
+      "<h3 class='dash-sub'>Últimos movimientos</h3>" + lastMoves +
+      '<p class="muted small" style="margin-top:.8rem">💡 Las compras hechas en este navegador se registran solas. Los pedidos que te lleguen por email desde otros dispositivos, registralos con "➕ Registrar venta" para que el stock y las ganancias queden al día.</p>'
+    );
+
+    $("#dashSale").addEventListener("click", function () { moveForm("venta"); });
+    $("#dashIntake").addEventListener("click", function () { moveForm("ingreso"); });
+    $("#dashBack").addEventListener("click", adminPanel);
+    $("#dashCSV").addEventListener("click", exportMovesCSV);
+  }
+
+  /* Formulario para registrar una venta o un ingreso de stock a mano. */
+  function moveForm(type) {
+    var isSale = type === "venta";
+    var options = getProducts().map(function (p) {
+      return '<option value="' + esc(p.id) + '">' + esc(p.name) + " (stock: " + Number(p.stock) + ")</option>";
+    }).join("");
+    openModal(
+      "<h3>" + (isSale ? "➕ Registrar venta" : "📦 Registrar ingreso de stock") + "</h3>" +
+      '<p class="muted small">' + (isSale
+        ? "Usalo cuando te llegue un pedido por email o vendas por fuera de la página."
+        : "Usalo cuando te llegue mercadería del proveedor. El aviso del 30% se calcula desde este nuevo total.") + "</p>" +
+      '<form id="moveForm">' +
+      '<select class="input" id="mvProduct">' + options + "</select>" +
+      '<input class="input" id="mvQty" type="number" min="1" step="1" value="1" required placeholder="Cantidad">' +
+      (isSale ? "" : '<input class="input" id="mvCost" type="number" min="0" step="1" placeholder="Nuevo costo por unidad (opcional)">') +
+      '<button class="btn btn-primary btn-block" type="submit">Registrar</button>' +
+      "</form>"
+    );
+    $("#moveForm").addEventListener("submit", function (e) {
+      e.preventDefault();
+      var id = $("#mvProduct").value;
+      var qty = Math.max(1, Math.floor(Number($("#mvQty").value) || 1));
+      if (isSale) {
+        var p = findProduct(id);
+        if (!p || Number(p.stock) < qty) { toast("No hay stock suficiente para esa venta"); return; }
+        recordSale(id, qty, true);
+      } else {
+        recordIntake(id, qty, Number($("#mvCost") ? $("#mvCost").value : 0) || 0);
+      }
+      renderCatalog();
+      renderCart();
+      dashboard();
+      toast(isSale ? "Venta registrada ✦" : "Ingreso registrado ✦");
+      notifyLowStock();
+    });
+  }
+
+  /* Exporta los movimientos a CSV compatible con Excel en español (; y BOM). */
+  function exportMovesCSV() {
+    var rows = [["Fecha", "Tipo", "Producto", "Cantidad", "Precio unitario", "Costo unitario", "Total venta", "Ganancia"]];
+    getMoves().forEach(function (m) {
+      var isSale = m.type === "venta";
+      rows.push([
+        m.date, m.type, m.name, m.qty, m.price, m.cost,
+        isSale ? m.price * m.qty : "", isSale ? (m.price - m.cost) * m.qty : ""
+      ]);
+    });
+    rows.push([]);
+    rows.push(["Stock actual", "", "", "", "", "", "", ""]);
+    rows.push(["Producto", "Stock", "% restante", "Costo unitario", "Precio", "Ganancia por unidad", "", ""]);
+    getProducts().forEach(function (p) {
+      rows.push([p.name, p.stock, stockPct(p) + "%", p.cost || 0, p.price, (Number(p.price) - (Number(p.cost) || 0)), "", ""]);
+    });
+    var csv = "\uFEFF" + rows.map(function (r) {
+      return r.map(function (c) {
+        return '"' + String(c == null ? "" : c).replace(/"/g, '""') + '"';
+      }).join(";");
+    }).join("\r\n");
+    var a = document.createElement("a");
+    a.href = "data:text/csv;charset=utf-8," + encodeURIComponent(csv);
+    a.download = "aurea-gestion-" + today() + ".csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    toast("Archivo descargado: abrilo con Excel ✦");
   }
 
   function exportCatalog() {
@@ -815,6 +1106,11 @@
       window.location.href = "mailto:" + encodeURIComponent(CONFIG.contactEmail) +
         "?subject=" + encodeURIComponent("Pedido " + orderCode + " · " + CONFIG.storeName) +
         "&body=" + encodeURIComponent(body);
+
+      // Registra la venta: baja el stock y alimenta el panel de Gestión.
+      ids.forEach(function (pid) { recordSale(pid, state.cart[pid], true); });
+      notifyLowStock();
+      renderCatalog();
 
       state.cart = {};
       saveCart();
