@@ -710,53 +710,131 @@
     });
   }
 
+  /* ==========================================================================
+     MI CUENTA — página completa (reemplaza a las demás secciones al abrirse)
+     ========================================================================== */
   function accountModal() {
     if (!state.session) { authModal("login"); return; }
-    var u = getUserRecord();
-    var p = (u && u.profile) || { location: "", phone: "", address: "" };
-    openModal(
-      "<h3>Mi cuenta</h3>" +
-      "<p><strong>" + esc(state.session.name) + "</strong><br>" +
-      '<span class="muted">' + esc(state.session.email) + "</span></p>" +
-      (isCreator() ? '<p class="form-ok">✦ Sos el creador de la tienda.</p>' : "") +
-      '<div style="background:var(--ivory);border-radius:10px;padding:.9rem 1rem;margin:.8rem 0;font-size:.9rem">' +
-      "<div>📍 <strong>Ubicación:</strong> " + (p.location ? esc(p.location) : '<span class="muted">sin completar</span>') + "</div>" +
-      "<div>📞 <strong>Teléfono:</strong> " + (p.phone ? esc(p.phone) : '<span class="muted">sin completar</span>') + "</div>" +
-      "<div>🏠 <strong>Dirección de entrega:</strong> " + (p.address ? esc(p.address) : '<span class="muted">sin completar</span>') + "</div>" +
-      "</div>" +
-      '<p class="muted small">🔒 Por tu seguridad, nunca guardamos datos de tarjetas: el pago siempre se hace dentro de la plataforma certificada (Mercado Pago, Stripe o PayPal).</p>' +
-      '<div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-top:1rem">' +
-      '<button class="btn btn-primary" id="accProfile">Editar mis datos</button>' +
-      (isCreator() ? '<button class="btn btn-gold" id="accAdmin">Panel del creador</button>' : "") +
-      (isCreator() ? '<button class="btn btn-gold" id="accDash">📊 Gestión</button>' : "") +
-      '<button class="btn btn-outline" id="accLogout">Cerrar sesión</button>' +
-      "</div>"
-    );
-    $("#accProfile").addEventListener("click", profileForm);
-    var adminBtn = $("#accAdmin");
-    if (adminBtn) adminBtn.addEventListener("click", adminPanel);
-    var dashBtn = $("#accDash");
-    if (dashBtn) dashBtn.addEventListener("click", dashboard);
-    $("#accLogout").addEventListener("click", function () {
-      setSession(null);
-      closeAll();
-      toast("Sesión cerrada. ¡Hasta pronto!");
-    });
+    showAccountPage();
   }
 
-  function profileForm() {
+  function myReviews() {
+    if (!state.session) return [];
+    var all = store.get(KEYS.reviews, {});
+    var out = [];
+    for (var pid in all) {
+      (all[pid] || []).forEach(function (rv) {
+        if (rv.email === state.session.email) {
+          var prod = findProduct(pid);
+          out.push({ pid: pid, product: prod ? prod.name : "Producto", stars: rv.stars, text: rv.text, date: rv.date });
+        }
+      });
+    }
+    return out;
+  }
+
+  function showAccountPage() {
+    if (!state.session) { authModal("login"); return; }
+    renderAccountPage();
+    closeAll();
+    document.body.classList.add("account-open");
+    $("#accountPage").hidden = false;
+    window.scrollTo({ top: 0 });
+    if (location.hash !== "#cuenta") {
+      try { history.pushState(null, "", "#cuenta"); } catch (e) { /* file:// */ }
+    }
+  }
+
+  function hideAccountPage() {
+    document.body.classList.remove("account-open");
+    $("#accountPage").hidden = true;
+  }
+
+  function renderAccountPage() {
     var u = getUserRecord();
     var p = (u && u.profile) || { location: "", phone: "", address: "" };
-    openModal(
-      "<h3>Mis datos</h3>" +
-      '<p class="muted small">Se guardan en tu cuenta para que comprar sea más rápido: el checkout se completa solo.</p>' +
+    var firstName = state.session.name.split(" ")[0];
+    var initial = (state.session.name.charAt(0) || "✦").toUpperCase();
+    var reviews = myReviews();
+    var items = cartCount();
+
+    var reviewsHTML = reviews.length
+      ? reviews.map(function (r) {
+          return '<div class="review-mini">' +
+            "<div><strong>" + esc(r.product) + "</strong> " + starsHTML(r.stars) + "</div>" +
+            (r.text ? '<p class="muted small">“' + esc(r.text) + "”</p>" : "") +
+            '<span class="muted small">' + esc(r.date) + "</span></div>";
+        }).join("")
+      : '<p class="muted small">Todavía no dejaste opiniones. Cuando compres algo, contanos qué te pareció: ayudás a otros compradores ✦</p>';
+
+    var creatorHTML = "";
+    if (isCreator()) {
+      var lows = lowStockProducts().length;
+      creatorHTML =
+        '<div class="account-card account-card-creator">' +
+        "<h3>⚙ Herramientas del creador</h3>" +
+        '<p class="muted small">' + getProducts().length + " productos en el catálogo · " +
+        (lows ? '<strong style="color:#b0433f">' + lows + " con stock bajo ⚠</strong>" : "stock sano ✔") + "</p>" +
+        '<div class="account-actions">' +
+        '<button class="btn btn-gold btn-sm" id="apAdmin">Panel del creador</button>' +
+        '<button class="btn btn-primary btn-sm" id="apDash">📊 Gestión y ganancias</button>' +
+        "</div></div>";
+    }
+
+    $("#accountPage").innerHTML =
+      '<div class="account-head">' +
+      '<div class="avatar">' + esc(initial) + "</div>" +
+      "<div>" +
+      "<h2>Hola, " + esc(firstName) + " ✦</h2>" +
+      '<p class="muted">' + esc(state.session.email) + "</p>" +
+      (isCreator() ? '<span class="creator-badge">Creador de Velora</span>' : "") +
+      "</div>" +
+      '<button class="btn btn-outline btn-sm account-logout" id="apLogout">Cerrar sesión</button>' +
+      "</div>" +
+
+      '<div class="account-grid">' +
+
+      '<div class="account-card">' +
+      "<h3>📦 Mis datos de entrega</h3>" +
+      '<p class="muted small">Se completan solos en cada compra, para que pagar te tome segundos.</p>' +
       '<form id="profileForm">' +
-      '<input class="input" id="prLocation" placeholder="Ciudad y país (ej: Lima, Perú)" maxlength="80" value="' + esc(p.location) + '">' +
-      '<input class="input" id="prPhone" type="tel" placeholder="Teléfono / WhatsApp" maxlength="30" value="' + esc(p.phone) + '">' +
-      '<input class="input" id="prAddress" placeholder="Dirección de entrega" maxlength="160" value="' + esc(p.address) + '">' +
-      '<button class="btn btn-primary btn-block" type="submit">Guardar</button>' +
-      "</form>"
-    );
+      '<label class="field-label">Ciudad y país</label>' +
+      '<input class="input" id="prLocation" placeholder="Ej: Batuco, Chile" maxlength="80" value="' + esc(p.location) + '">' +
+      '<label class="field-label">Teléfono / WhatsApp</label>' +
+      '<input class="input" id="prPhone" type="tel" placeholder="+56 9 …" maxlength="30" value="' + esc(p.phone) + '">' +
+      '<label class="field-label">Dirección de entrega</label>' +
+      '<input class="input" id="prAddress" placeholder="Calle, número, comuna" maxlength="160" value="' + esc(p.address) + '">' +
+      '<button class="btn btn-primary btn-sm" type="submit">Guardar cambios</button>' +
+      "</form></div>" +
+
+      '<div class="account-card">' +
+      "<h3>🛒 Mi carrito</h3>" +
+      (items
+        ? "<p><strong>" + items + "</strong> producto" + (items > 1 ? "s" : "") + " esperándote · Subtotal <strong>" +
+          esc(money(cartTotal())) + "</strong></p>"
+        : '<p class="muted small">Tu carrito está vacío por ahora.</p>') +
+      '<div class="account-actions">' +
+      (items ? '<button class="btn btn-gold btn-sm" id="apCart">Ver mi carrito</button>' : "") +
+      '<a class="btn btn-outline btn-sm" href="#catalogo" id="apCatalog">Ir al catálogo</a>' +
+      "</div></div>" +
+
+      '<div class="account-card">' +
+      "<h3>✦ Mis opiniones</h3>" + reviewsHTML + "</div>" +
+
+      '<div class="account-card">' +
+      "<h3>🔒 Tu seguridad en Velora</h3>" +
+      '<ul class="secure-list">' +
+      "<li>Tu contraseña se guarda cifrada — nadie puede leerla, ni siquiera la tienda.</li>" +
+      "<li>Nunca guardamos datos de tarjetas: el pago ocurre en plataformas certificadas.</li>" +
+      "<li>Tus datos viven solo en tu dispositivo y podés borrarlos cuando quieras.</li>" +
+      "</ul>" +
+      '<button class="link-btn" id="apPrivacy">Leer la política de privacidad</button>' +
+      "</div>" +
+
+      creatorHTML +
+      "</div>";
+
+    // ---- Eventos de la página ----
     $("#profileForm").addEventListener("submit", function (e) {
       e.preventDefault();
       updateUserRecord({
@@ -767,8 +845,20 @@
         }
       });
       toast("Datos guardados ✦");
-      accountModal();
     });
+    $("#apLogout").addEventListener("click", function () {
+      setSession(null);
+      hideAccountPage();
+      toast("Sesión cerrada. ¡Hasta pronto!");
+    });
+    var apCart = $("#apCart");
+    if (apCart) apCart.addEventListener("click", function () { openDrawer("#cartDrawer"); });
+    $("#apCatalog").addEventListener("click", hideAccountPage);
+    $("#apPrivacy").addEventListener("click", privacyModal);
+    var apAdmin = $("#apAdmin");
+    if (apAdmin) apAdmin.addEventListener("click", adminPanel);
+    var apDash = $("#apDash");
+    if (apDash) apDash.addEventListener("click", dashboard);
   }
 
   /* ==========================================================================
@@ -1260,6 +1350,21 @@
 
     var navLink = t.closest("[data-nav]");
     if (navLink && navLink.getAttribute("href") !== "#") { closeAll(); }
+
+    // Cualquier link a una sección de la tienda cierra la página Mi cuenta.
+    var sectionLink = t.closest('a[href^="#"]');
+    if (sectionLink) {
+      var href = sectionLink.getAttribute("href");
+      if (href && href !== "#" && href !== "#cuenta") hideAccountPage();
+    }
+  });
+
+  window.addEventListener("hashchange", function () {
+    if (location.hash === "#cuenta") {
+      if (state.session) showAccountPage();
+    } else {
+      hideAccountPage();
+    }
   });
 
   $("#btnMenu").addEventListener("click", function () {
@@ -1302,4 +1407,6 @@
   renderCatalog();
   renderCart();
   renderAccountUI();
+  // Si la página se abre directo en #cuenta y hay sesión, muestra el perfil.
+  if (location.hash === "#cuenta" && state.session) showAccountPage();
 })();

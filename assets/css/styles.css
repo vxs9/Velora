@@ -660,6 +660,100 @@ textarea.input { border-radius: var(--radius); resize: vertical; }
 }
 .move-row span:last-child { color: var(--ink-soft); white-space: nowrap; }
 
+/* ---------- Página Mi cuenta ---------- */
+body.account-open main > section:not(#accountPage) { display: none; }
+
+.account-page { min-height: 60vh; }
+
+.account-head {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  flex-wrap: wrap;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--gold-soft);
+}
+.account-head h2 { font-size: 1.6rem; }
+.account-logout { margin-left: auto; }
+
+.avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+  color: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-family: var(--serif);
+  box-shadow: var(--shadow-soft);
+  flex-shrink: 0;
+}
+
+.creator-badge {
+  display: inline-block;
+  background: var(--gold);
+  color: var(--white);
+  border-radius: 999px;
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  padding: .25rem .8rem;
+  margin-top: .3rem;
+}
+
+.account-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  gap: 1.2rem;
+  align-items: start;
+}
+
+.account-card {
+  background: var(--white);
+  border: 1px solid var(--gold-soft);
+  border-radius: var(--radius);
+  padding: 1.4rem;
+  box-shadow: var(--shadow-soft);
+}
+.account-card h3 { font-size: 1.05rem; margin-bottom: .7rem; }
+.account-card form { display: flex; flex-direction: column; gap: .45rem; margin-top: .6rem; }
+.account-card form .btn { margin-top: .6rem; align-self: flex-start; }
+.account-card .input { max-width: none; }
+.account-card-creator { border-color: var(--gold); background: linear-gradient(180deg, #fffdf8, var(--white)); }
+
+.field-label {
+  font-size: .74rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--ink-soft);
+  margin-top: .35rem;
+}
+
+.account-actions { display: flex; gap: .6rem; flex-wrap: wrap; margin-top: .8rem; }
+
+.review-mini { border-bottom: 1px solid var(--ivory-2); padding: .5rem 0; }
+.review-mini:last-child { border-bottom: none; }
+
+.secure-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+  font-size: .88rem;
+  color: var(--ink-soft);
+  margin-bottom: .6rem;
+}
+.secure-list li::before { content: "✔ "; color: var(--ok); }
+
+@media (max-width: 560px) {
+  .account-head { gap: .9rem; }
+  .account-logout { margin-left: 0; width: 100%; }
+}
+
 /* ---------- Animación vuelo al carrito ---------- */
 .fly-item {
   position: fixed;
