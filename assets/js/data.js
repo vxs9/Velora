@@ -89,23 +89,6 @@ var PRODUCTS = [
     paymentLink: ""
   },
   {
-    id: "p3",
-    providerLink: "https://es.aliexpress.com/w/wholesale-sunset-lamp-led.html",
-    colors: [],
-    cost: 6500,
-    rating: 4.8,
-    ratingCount: 3120,
-    name: "Lámpara LED ambiente",
-    category: "Hogar",
-    price: 18999,
-    oldPrice: 24999,
-    emoji: "💡",
-    image: "",
-    desc: "Luz cálida regulable con control táctil. Transforma cualquier espacio.",
-    stock: 20,
-    paymentLink: ""
-  },
-  {
     id: "p4",
     providerLink: "https://es.aliexpress.com/w/wholesale-difusor-aromas-ultrasonico.html",
     colors: ["Blanco","Beige"],
