@@ -36,6 +36,8 @@ var CONFIG = {
     desc        — descripción corta
     stock       — unidades disponibles (0 = agotado)
     paymentLink — link de pago individual (opcional)
+    providerLink — link del proveedor (Temu/AliExpress/etc.); privado,
+                   solo se ve en el Panel del creador
 */
 var PRODUCTS = [
   {

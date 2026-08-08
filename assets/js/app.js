@@ -161,7 +161,11 @@
     return t;
   }
 
-  function saveCart() { store.set(KEYS.cart, state.cart); }
+  function saveCart() {
+    store.set(KEYS.cart, state.cart);
+    // Si hay sesión, el carrito también queda guardado en la cuenta.
+    if (state.session) updateUserRecord({ cart: state.cart });
+  }
 
   function addToCart(id) {
     var p = findProduct(id);
@@ -313,9 +317,38 @@
     return state.session && state.session.email === CONFIG.creatorEmail.toLowerCase();
   }
 
+  /* Perfil del usuario: ubicación, teléfono, dirección y su carrito guardado. */
+  function getUserRecord() {
+    if (!state.session) return null;
+    var users = store.get(KEYS.users, {});
+    return users[state.session.email] || null;
+  }
+
+  function updateUserRecord(patch) {
+    if (!state.session) return;
+    var users = store.get(KEYS.users, {});
+    var u = users[state.session.email];
+    if (!u) return;
+    for (var k in patch) u[k] = patch[k];
+    store.set(KEYS.users, users);
+  }
+
   function setSession(sess) {
     state.session = sess;
-    if (sess) store.set(KEYS.session, sess); else store.del(KEYS.session);
+    if (sess) {
+      store.set(KEYS.session, sess);
+      // Recupera el carrito guardado en la cuenta y lo une con el actual.
+      var u = getUserRecord();
+      if (u && u.cart) {
+        for (var id in u.cart) {
+          if (!state.cart[id] && findProduct(id)) state.cart[id] = u.cart[id];
+        }
+        saveCart();
+        renderCart();
+      }
+    } else {
+      store.del(KEYS.session);
+    }
     renderAccountUI();
   }
 
@@ -338,9 +371,10 @@
       "<h3>" + (isLogin ? "Iniciar sesión" : "Crear tu cuenta") + "</h3>" +
       '<p class="muted small">' + (isLogin
         ? "Bienvenido de nuevo a Áurea."
-        : "Solo pedimos lo mínimo: nombre, email y una contraseña. Nada más.") + "</p>" +
+        : "Solo pedimos lo mínimo para atenderte. Tu tarjeta nunca se guarda acá.") + "</p>" +
       '<form id="authForm">' +
       (isLogin ? "" : '<input class="input" type="text" id="authName" placeholder="Tu nombre" required maxlength="60">') +
+      (isLogin ? "" : '<input class="input" type="text" id="authLocation" placeholder="Tu ciudad y país (ej: Lima, Perú)" required maxlength="80">') +
       '<input class="input" type="email" id="authEmail" placeholder="Email" required maxlength="120">' +
       '<input class="input" type="password" id="authPass" placeholder="Contraseña (mínimo 8 caracteres)" required minlength="8" maxlength="100">' +
       '<p class="form-error" id="authError" hidden></p>' +
@@ -379,9 +413,14 @@
         var name = $("#authName").value.trim();
         if (name.length < 2) { errEl.textContent = "Ingresá tu nombre."; errEl.hidden = false; return; }
         if (users[email]) { errEl.textContent = "Ya existe una cuenta con ese email. Iniciá sesión."; errEl.hidden = false; return; }
+        var location = $("#authLocation").value.trim();
         var salt = randomSalt();
         hashPassword(pass, salt).then(function (hash) {
-          users[email] = { name: name, salt: salt, hash: hash, created: "" };
+          users[email] = {
+            name: name, salt: salt, hash: hash, created: "",
+            profile: { location: location, phone: "", address: "" },
+            cart: {}
+          };
           store.set(KEYS.users, users);
           setSession({ email: email, name: name });
           closeAll();
@@ -393,22 +432,59 @@
 
   function accountModal() {
     if (!state.session) { authModal("login"); return; }
+    var u = getUserRecord();
+    var p = (u && u.profile) || { location: "", phone: "", address: "" };
     openModal(
       "<h3>Mi cuenta</h3>" +
       "<p><strong>" + esc(state.session.name) + "</strong><br>" +
       '<span class="muted">' + esc(state.session.email) + "</span></p>" +
       (isCreator() ? '<p class="form-ok">✦ Sos el creador de la tienda.</p>' : "") +
+      '<div style="background:var(--ivory);border-radius:10px;padding:.9rem 1rem;margin:.8rem 0;font-size:.9rem">' +
+      "<div>📍 <strong>Ubicación:</strong> " + (p.location ? esc(p.location) : '<span class="muted">sin completar</span>') + "</div>" +
+      "<div>📞 <strong>Teléfono:</strong> " + (p.phone ? esc(p.phone) : '<span class="muted">sin completar</span>') + "</div>" +
+      "<div>🏠 <strong>Dirección de entrega:</strong> " + (p.address ? esc(p.address) : '<span class="muted">sin completar</span>') + "</div>" +
+      "</div>" +
+      '<p class="muted small">🔒 Por tu seguridad, nunca guardamos datos de tarjetas: el pago siempre se hace dentro de la plataforma certificada (Mercado Pago, Stripe o PayPal).</p>' +
       '<div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-top:1rem">' +
+      '<button class="btn btn-primary" id="accProfile">Editar mis datos</button>' +
       (isCreator() ? '<button class="btn btn-gold" id="accAdmin">Panel del creador</button>' : "") +
       '<button class="btn btn-outline" id="accLogout">Cerrar sesión</button>' +
       "</div>"
     );
+    $("#accProfile").addEventListener("click", profileForm);
     var adminBtn = $("#accAdmin");
     if (adminBtn) adminBtn.addEventListener("click", adminPanel);
     $("#accLogout").addEventListener("click", function () {
       setSession(null);
       closeAll();
       toast("Sesión cerrada. ¡Hasta pronto!");
+    });
+  }
+
+  function profileForm() {
+    var u = getUserRecord();
+    var p = (u && u.profile) || { location: "", phone: "", address: "" };
+    openModal(
+      "<h3>Mis datos</h3>" +
+      '<p class="muted small">Se guardan en tu cuenta para que comprar sea más rápido: el checkout se completa solo.</p>' +
+      '<form id="profileForm">' +
+      '<input class="input" id="prLocation" placeholder="Ciudad y país (ej: Lima, Perú)" maxlength="80" value="' + esc(p.location) + '">' +
+      '<input class="input" id="prPhone" type="tel" placeholder="Teléfono / WhatsApp" maxlength="30" value="' + esc(p.phone) + '">' +
+      '<input class="input" id="prAddress" placeholder="Dirección de entrega" maxlength="160" value="' + esc(p.address) + '">' +
+      '<button class="btn btn-primary btn-block" type="submit">Guardar</button>' +
+      "</form>"
+    );
+    $("#profileForm").addEventListener("submit", function (e) {
+      e.preventDefault();
+      updateUserRecord({
+        profile: {
+          location: $("#prLocation").value.trim(),
+          phone: $("#prPhone").value.trim(),
+          address: $("#prAddress").value.trim()
+        }
+      });
+      toast("Datos guardados ✦");
+      accountModal();
     });
   }
 
@@ -429,7 +505,9 @@
       '<div class="admin-list">' +
       list.map(function (p) {
         return '<div class="admin-row"><span>' + esc(p.emoji || "🛍️") + " <strong>" + esc(p.name) + "</strong> · " +
-          esc(money(p.price)) + " · stock " + Number(p.stock) + "</span>" +
+          esc(money(p.price)) + " · stock " + Number(p.stock) +
+          (p.providerLink ? ' · <a href="' + esc(p.providerLink) + '" target="_blank" rel="noopener noreferrer">proveedor ↗</a>' : "") +
+          "</span>" +
           '<span class="actions">' +
           '<button class="btn btn-sm btn-outline" data-edit="' + esc(p.id) + '">Editar</button>' +
           '<button class="btn btn-sm btn-danger" data-del="' + esc(p.id) + '">✕</button>' +
@@ -485,6 +563,7 @@
       '<input class="input" id="pfEmoji" placeholder="Emoji (si no hay foto)" maxlength="4" value="' + esc(p.emoji) + '">' +
       '<input class="input" id="pfImage" type="url" placeholder="URL de imagen (opcional, https://...)" value="' + esc(p.image) + '">' +
       '<input class="input" id="pfPay" type="url" placeholder="Link de pago (opcional, Mercado Pago/Stripe)" value="' + esc(p.paymentLink || "") + '">' +
+      '<input class="input" id="pfProv" type="url" placeholder="Link del proveedor (privado, solo lo ves vos)" value="' + esc(p.providerLink || "") + '">' +
       '<textarea class="input" id="pfDesc" rows="3" placeholder="Descripción corta" required maxlength="200">' + esc(p.desc) + "</textarea>" +
       '<button class="btn btn-primary btn-block" type="submit">Guardar</button>' +
       "</form>"
@@ -493,8 +572,10 @@
       e.preventDefault();
       var img = $("#pfImage").value.trim();
       var pay = $("#pfPay").value.trim();
+      var prov = $("#pfProv").value.trim();
       if (img && img.indexOf("https://") !== 0) { toast("La imagen debe empezar con https://"); return; }
       if (pay && pay.indexOf("https://") !== 0) { toast("El link de pago debe empezar con https://"); return; }
+      if (prov && prov.indexOf("https://") !== 0) { toast("El link del proveedor debe empezar con https://"); return; }
       var next = {
         id: p.id,
         name: $("#pfName").value.trim(),
@@ -505,6 +586,7 @@
         emoji: $("#pfEmoji").value.trim() || "🛍️",
         image: img,
         paymentLink: pay,
+        providerLink: prov,
         desc: $("#pfDesc").value.trim()
       };
       var list = getProducts().slice();
@@ -549,6 +631,12 @@
     var orderCode = "AU-" + Math.floor(Math.random() * 900000 + 100000);
     var total = cartTotal();
 
+    // Autocompleta con los datos guardados en el perfil.
+    var userRec = getUserRecord();
+    var profile = (userRec && userRec.profile) || { location: "", phone: "", address: "" };
+    var fullAddress = profile.address +
+      (profile.location ? (profile.address ? ", " : "") + profile.location : "");
+
     // Link de pago: usa el del primer producto que tenga uno, o el general.
     var payLink = CONFIG.checkoutUrl || "";
     for (var i = 0; i < ids.length && !payLink; i++) {
@@ -566,8 +654,8 @@
       '<form id="checkoutForm">' +
       '<input class="input" id="coName" placeholder="Nombre y apellido" required maxlength="80" value="' + esc(state.session ? state.session.name : "") + '">' +
       '<input class="input" id="coEmail" type="email" placeholder="Email de contacto" required maxlength="120" value="' + esc(state.session ? state.session.email : "") + '">' +
-      '<input class="input" id="coPhone" type="tel" placeholder="Teléfono / WhatsApp" required maxlength="30">' +
-      '<input class="input" id="coAddress" placeholder="Dirección de entrega" required maxlength="160">' +
+      '<input class="input" id="coPhone" type="tel" placeholder="Teléfono / WhatsApp" required maxlength="30" value="' + esc(profile.phone) + '">' +
+      '<input class="input" id="coAddress" placeholder="Dirección de entrega (calle, ciudad, país)" required maxlength="160" value="' + esc(fullAddress) + '">' +
       '<button class="btn btn-gold btn-block" type="submit">' +
       (payLink ? "Ir a pagar de forma segura" : "Confirmar pedido") + "</button>" +
       "</form>" +
@@ -584,6 +672,13 @@
       var email = $("#coEmail").value.trim();
       var phone = $("#coPhone").value.trim();
       var address = $("#coAddress").value.trim();
+
+      // Guarda los datos en el perfil para la próxima compra.
+      if (state.session) {
+        updateUserRecord({
+          profile: { location: profile.location, phone: phone, address: address }
+        });
+      }
 
       var body = "PEDIDO " + orderCode + " — " + CONFIG.storeName + "\n\n" +
         lines.join("\n") + "\n\nTOTAL: " + money(total) + "\n\n" +
