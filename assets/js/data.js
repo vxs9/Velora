@@ -56,6 +56,8 @@ var CONFIG = {
 var PRODUCTS = [
   {
     id: "p1",
+    providerLink: "https://es.aliexpress.com/w/wholesale-auriculares-tws-bluetooth.html",
+    colors: ["Negro","Blanco"],
     cost: 12000,
     rating: 4.7,
     ratingCount: 2341,
@@ -71,6 +73,8 @@ var PRODUCTS = [
   },
   {
     id: "p2",
+    providerLink: "https://es.aliexpress.com/w/wholesale-smartwatch-mujer-hombre.html",
+    colors: ["Negro","Rosa","Azul"],
     cost: 16000,
     rating: 4.6,
     ratingCount: 1876,
@@ -86,6 +90,8 @@ var PRODUCTS = [
   },
   {
     id: "p3",
+    providerLink: "https://es.aliexpress.com/w/wholesale-sunset-lamp-led.html",
+    colors: [],
     cost: 6500,
     rating: 4.8,
     ratingCount: 3120,
@@ -101,6 +107,8 @@ var PRODUCTS = [
   },
   {
     id: "p4",
+    providerLink: "https://es.aliexpress.com/w/wholesale-difusor-aromas-ultrasonico.html",
+    colors: ["Blanco","Beige"],
     cost: 5500,
     rating: 4.7,
     ratingCount: 1543,
@@ -116,6 +124,8 @@ var PRODUCTS = [
   },
   {
     id: "p5",
+    providerLink: "https://es.aliexpress.com/w/wholesale-serum-vitamina-c-skincare-set.html",
+    colors: [],
     cost: 7500,
     rating: 4.6,
     ratingCount: 987,
@@ -131,6 +141,8 @@ var PRODUCTS = [
   },
   {
     id: "p6",
+    providerLink: "https://es.aliexpress.com/w/wholesale-botella-termica-750ml-acero.html",
+    colors: ["Negro","Blanco","Celeste"],
     cost: 4500,
     rating: 4.8,
     ratingCount: 4215,
@@ -146,6 +158,8 @@ var PRODUCTS = [
   },
   {
     id: "p7",
+    providerLink: "https://es.aliexpress.com/w/wholesale-collar-chapado-oro-18k-mujer.html",
+    colors: ["Dorado"],
     cost: 3500,
     rating: 4.7,
     ratingCount: 1298,
@@ -161,6 +175,8 @@ var PRODUCTS = [
   },
   {
     id: "p8",
+    providerLink: "https://es.aliexpress.com/w/wholesale-billetera-rfid-slim-cuero.html",
+    colors: ["Negro","Café"],
     cost: 5000,
     rating: 4.6,
     ratingCount: 856,
@@ -176,6 +192,8 @@ var PRODUCTS = [
   },
   {
     id: "p9",
+    providerLink: "https://es.aliexpress.com/w/wholesale-bandas-resistencia-set-5.html",
+    colors: [],
     cost: 3000,
     rating: 4.8,
     ratingCount: 2764,
@@ -191,6 +209,8 @@ var PRODUCTS = [
   },
   {
     id: "p10",
+    providerLink: "https://es.aliexpress.com/w/wholesale-esterilla-yoga-tpe-6mm.html",
+    colors: ["Morado","Verde","Rosa"],
     cost: 6000,
     rating: 4.7,
     ratingCount: 1432,

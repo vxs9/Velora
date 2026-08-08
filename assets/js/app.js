@@ -30,7 +30,8 @@
     users: "aurea_users",
     session: "aurea_session",
     reviews: "aurea_reviews",
-    moves: "aurea_moves"
+    moves: "aurea_moves",
+    cartColors: "aurea_cartcolors"
   };
 
   /* ---------- Utilidades ---------- */
@@ -46,6 +47,28 @@
   function money(n) {
     var num = Number(n) || 0;
     return CONFIG.currency + " " + num.toLocaleString("es-CL", { maximumFractionDigits: 2 });
+  }
+
+  /* ---------- Colores de producto (puntos como en las boutiques) ---------- */
+  var COLOR_MAP = {
+    "negro": "#1c2430", "blanco": "#f5f4f0", "gris": "#9aa0a6",
+    "dorado": "#c9a469", "plateado": "#c4c4c4", "rosa": "#f2b8c6",
+    "rojo": "#c0392b", "azul": "#2456a6", "celeste": "#7ec8e3",
+    "verde": "#2f7a4d", "beige": "#d9c7a7", "café": "#6b4a2e",
+    "marrón": "#6b4a2e", "morado": "#7d5ba6", "amarillo": "#e7c14d",
+    "naranjo": "#e07a2f", "naranja": "#e07a2f", "burdeo": "#7b2d3b"
+  };
+
+  function colorHex(name) {
+    return COLOR_MAP[String(name || "").toLowerCase().trim()] || "#cfcfcf";
+  }
+
+  /* Puntos informativos (tarjetas del catálogo) */
+  function colorDotsHTML(p) {
+    if (!p.colors || !p.colors.length) return "";
+    return '<div class="color-dots">' + p.colors.map(function (n) {
+      return '<span class="dot" title="' + esc(n) + '" style="background:' + colorHex(n) + '"></span>';
+    }).join("") + "</div>";
   }
 
   /* Estrellas con relleno proporcional (ej: 4.7 pinta el 94% en dorado). */
@@ -187,6 +210,7 @@
     category: "Todo",
     search: "",
     cart: store.get(KEYS.cart, {}),          // { productId: cantidad }
+    cartColors: store.get(KEYS.cartColors, {}), // { productId: "Negro" }
     session: store.get(KEYS.session, null)   // { email, name }
   };
 
@@ -241,6 +265,7 @@
       })() +
       '<p class="card-desc">' + esc(p.desc) + "</p>" +
       '<div class="card-foot">' + priceHtml + btn + "</div>" +
+      colorDotsHTML(p) +
       "</div></article>";
   }
 
@@ -293,6 +318,11 @@
     var qty = (state.cart[id] || 0) + 1;
     if (qty > Number(p.stock)) { toast("No hay más stock de este producto"); return; }
     state.cart[id] = qty;
+    // Si tiene colores y aún no se eligió uno, queda el primero por defecto.
+    if (p.colors && p.colors.length && !state.cartColors[id]) {
+      state.cartColors[id] = p.colors[0];
+      store.set(KEYS.cartColors, state.cartColors);
+    }
     saveCart();
     renderCart();
     if (!flyToCart(sourceEl, p)) toast("✦ Agregado al carrito");
@@ -408,7 +438,10 @@
         '<div class="cart-thumb">' + thumb + "</div>" +
         "<div>" +
         '<div class="cart-item-name">' + esc(p.name) + "</div>" +
-        '<div class="cart-item-price">' + esc(money(p.price)) + " c/u</div>" +
+        '<div class="cart-item-price">' + esc(money(p.price)) + " c/u" +
+        (p.colors && p.colors.length && state.cartColors[id]
+          ? ' · <span class="dot dot-inline" style="background:' + colorHex(state.cartColors[id]) + '"></span> ' + esc(state.cartColors[id])
+          : "") + "</div>" +
         '<div class="qty">' +
         '<button data-qty="-1" data-id="' + esc(id) + '" aria-label="Restar">−</button>' +
         "<span>" + qty + "</span>" +
@@ -478,6 +511,40 @@
         }).join("")
       : '<p class="muted small">Todavía no hay opiniones en la tienda. ¡Sé el primero!</p>';
 
+    // Selector de color (si el producto tiene variantes)
+    var chosen = "";
+    var colorPickHTML = "";
+    if (p.colors && p.colors.length) {
+      chosen = state.cartColors[p.id] || p.colors[0];
+      if (p.colors.indexOf(chosen) === -1) chosen = p.colors[0];
+      colorPickHTML = '<div class="color-pick" id="colorPick">' +
+        '<span class="muted small">Color:</span> ' +
+        p.colors.map(function (n) {
+          return '<button type="button" class="dot dot-lg' + (n === chosen ? " on" : "") +
+            '" data-color="' + esc(n) + '" title="' + esc(n) + '" style="background:' + colorHex(n) + '"></button>';
+        }).join("") +
+        ' <strong class="small" id="colorLabel">' + esc(chosen) + "</strong></div>";
+    }
+
+    // "También te puede gustar": misma categoría primero, luego los mejor valorados
+    var rel = getProducts().filter(function (x) { return x.id !== p.id && x.category === p.category; });
+    getProducts()
+      .filter(function (x) { return x.id !== p.id && x.category !== p.category; })
+      .sort(function (a, b) { return (Number(b.rating) || 0) - (Number(a.rating) || 0); })
+      .forEach(function (x) { if (rel.length < 4) rel.push(x); });
+    rel = rel.slice(0, 4);
+    var relatedHTML = rel.length
+      ? '<div class="related-block"><h3 class="related-title">También te puede gustar ✦</h3>' +
+        '<div class="related-row">' + rel.map(function (x) {
+          var rt = x.image ? '<img src="' + esc(x.image) + '" alt="">' : esc(x.emoji || "🛍️");
+          return '<div class="related-card" data-view="' + esc(x.id) + '">' +
+            '<div class="related-thumb">' + rt + "</div>" +
+            '<span class="related-name">' + esc(x.name) + "</span>" +
+            '<strong class="related-price">' + esc(money(x.price)) + "</strong>" +
+            colorDotsHTML(x) + "</div>";
+        }).join("") + "</div></div>"
+      : "";
+
     var formHTML = state.session
       ? '<form id="reviewForm">' +
         '<div class="star-pick" id="starPick">' +
@@ -504,13 +571,29 @@
       '<p class="muted small">' + (Number(p.stock) > 0
         ? "Stock disponible: " + Number(p.stock) + " unidades"
         : "Producto agotado por el momento") + "</p>" +
+      colorPickHTML +
       '<p class="muted small">' + esc(CONFIG.shippingNote || "") + "</p>" +
       (Number(p.stock) > 0
         ? '<button class="btn btn-gold btn-block" style="margin-top:1rem" data-add="' + esc(p.id) + '">Agregar al carrito</button>'
         : "") +
+      relatedHTML +
       '<div class="reviews-block"><h3 style="font-size:1.1rem">Opiniones</h3>' +
       reviewsHTML + formHTML + "</div>"
     );
+
+    // Selección de color: se recuerda para el carrito y el pedido
+    $all("#colorPick .dot-lg").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var name = btn.getAttribute("data-color");
+        state.cartColors[p.id] = name;
+        store.set(KEYS.cartColors, state.cartColors);
+        $all("#colorPick .dot-lg").forEach(function (b2) {
+          b2.classList.toggle("on", b2 === btn);
+        });
+        $("#colorLabel").textContent = name;
+        renderCart();
+      });
+    });
 
     // Borrado de opiniones (solo el creador)
     $all("[data-delreview]").forEach(function (b) {
@@ -1021,7 +1104,10 @@
         '<input class="input" id="pfEmoji" maxlength="4" value="' + esc(p.emoji) + '">') +
       field("Foto (URL)", "opcional, debe empezar con https://",
         '<input class="input" id="pfImage" type="url" placeholder="https://…" value="' + esc(p.image) + '">') +
-      "</div></div>" +
+      "</div>" +
+      field("Colores disponibles", "separados por coma; se muestran como puntos y el cliente elige uno (ej: Negro, Blanco, Rosa)",
+        '<input class="input" id="pfColors" maxlength="120" placeholder="Negro, Blanco" value="' + esc((p.colors || []).join(", ")) + '">') +
+      "</div>" +
 
       '<div class="form-card"><h4>Precios</h4><div class="form-grid form-grid-3">' +
       field("Precio de venta", "lo que paga el cliente",
@@ -1091,6 +1177,7 @@
         paymentLink: pay,
         providerLink: prov,
         barcode: $("#pfBarcode").value.trim(),
+        colors: $("#pfColors").value.split(",").map(function (c) { return c.trim(); }).filter(Boolean),
         desc: $("#pfDesc").value.trim()
       };
       // Registra el cambio de stock como movimiento de gestión.
@@ -1545,7 +1632,10 @@
 
     var lines = ids.map(function (id) {
       var p = findProduct(id);
-      return p ? state.cart[id] + " × " + p.name + " — " + money(Number(p.price) * state.cart[id]) : "";
+      if (!p) return "";
+      var colorNote = p.colors && p.colors.length && state.cartColors[id]
+        ? " (color " + state.cartColors[id] + ")" : "";
+      return state.cart[id] + " × " + p.name + colorNote + " — " + money(Number(p.price) * state.cart[id]);
     }).filter(Boolean);
 
     var orderCode = "VL-" + Math.floor(Math.random() * 900000 + 100000);
@@ -1618,6 +1708,8 @@
       renderCatalog();
 
       state.cart = {};
+      state.cartColors = {};
+      store.set(KEYS.cartColors, state.cartColors);
       saveCart();
       renderCart();
       openModal(
@@ -1727,6 +1819,8 @@
   $("#btnCheckout").addEventListener("click", checkout);
   $("#btnClearCart").addEventListener("click", function () {
     state.cart = {};
+    state.cartColors = {};
+    store.set(KEYS.cartColors, state.cartColors);
     saveCart();
     renderCart();
   });
