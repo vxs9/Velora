@@ -1659,8 +1659,14 @@
       '<p class="muted small">Pedido <strong>' + orderCode + "</strong> · " + esc(CONFIG.shippingNote || "") + "</p>" +
       '<div style="background:var(--ivory);border-radius:10px;padding:1rem;margin:.8rem 0">' +
       lines.map(function (l) { return '<div style="font-size:.9rem">' + esc(l) + "</div>"; }).join("") +
-      '<div style="border-top:1px solid var(--gold-soft);margin-top:.6rem;padding-top:.6rem;display:flex;justify-content:space-between"><strong>Total</strong><strong>' + esc(money(total)) + "</strong></div>" +
+      '<div id="coDiscountLine" hidden style="display:flex;justify-content:space-between;color:var(--ok);margin-top:.4rem"><span>Descuento</span><span id="coDiscountAmt"></span></div>' +
+      '<div style="border-top:1px solid var(--gold-soft);margin-top:.6rem;padding-top:.6rem;display:flex;justify-content:space-between"><strong>Total</strong><strong id="coTotalAmt">' + esc(money(total)) + "</strong></div>" +
       "</div>" +
+      (CONFIG.promoCode
+        ? '<div class="promo-row"><input class="input" id="coPromo" placeholder="Código de descuento (opcional)" maxlength="30">' +
+          '<button type="button" class="btn btn-sm btn-outline" id="coApply">Aplicar</button></div>' +
+          '<p class="small" id="promoMsg" hidden></p>'
+        : "") +
       '<form id="checkoutForm">' +
       '<input class="input" id="coName" placeholder="Nombre y apellido" required maxlength="80" value="' + esc(state.session ? state.session.name : "") + '">' +
       '<input class="input" id="coEmail" type="email" placeholder="Email de contacto" required maxlength="120" value="' + esc(state.session ? state.session.email : "") + '">' +
@@ -1673,8 +1679,37 @@
       (payLink
         ? "El pago se procesa en una plataforma certificada (nunca vemos tu tarjeta)."
         : "Al confirmar, se abre un email con el detalle del pedido para coordinar el pago y la entrega con la tienda.") +
-      "</p>"
+      "</p>" +
+      (CONFIG.guaranteeNote ? '<p class="small form-ok">' + esc(CONFIG.guaranteeNote) + "</p>" : "")
     );
+
+    // Código de descuento de lanzamiento
+    var discount = 0;
+    var applyBtn = $("#coApply");
+    if (applyBtn) {
+      applyBtn.addEventListener("click", function () {
+        var code = $("#coPromo").value.trim().toUpperCase();
+        var msg = $("#promoMsg");
+        if (code && code === String(CONFIG.promoCode).toUpperCase()) {
+          discount = Math.round(total * (Number(CONFIG.promoPct) || 0) / 100);
+          $("#coDiscountLine").hidden = false;
+          $("#coDiscountLine").style.display = "flex";
+          $("#coDiscountAmt").textContent = "−" + money(discount) + " (" + CONFIG.promoPct + "%)";
+          $("#coTotalAmt").textContent = money(total - discount);
+          msg.className = "small form-ok";
+          msg.textContent = "✔ Código aplicado: " + CONFIG.promoPct + "% de descuento";
+          msg.hidden = false;
+        } else {
+          discount = 0;
+          $("#coDiscountLine").hidden = true;
+          $("#coDiscountLine").style.display = "none";
+          $("#coTotalAmt").textContent = money(total);
+          msg.className = "small form-error";
+          msg.textContent = "Ese código no es válido";
+          msg.hidden = false;
+        }
+      });
+    }
 
     $("#checkoutForm").addEventListener("submit", function (e) {
       e.preventDefault();
@@ -1690,8 +1725,14 @@
         });
       }
 
+      var totalFinal = total - discount;
       var body = "PEDIDO " + orderCode + " — " + CONFIG.storeName + "\n\n" +
-        lines.join("\n") + "\n\nTOTAL: " + money(total) + "\n\n" +
+        lines.join("\n") +
+        (discount > 0
+          ? "\n\nSubtotal: " + money(total) +
+            "\nDescuento (" + CONFIG.promoCode + " −" + CONFIG.promoPct + "%): −" + money(discount)
+          : "") +
+        "\n\nTOTAL: " + money(totalFinal) + "\n\n" +
         "Cliente: " + name + "\nEmail: " + email + "\nTeléfono: " + phone + "\nEntrega: " + address;
 
       if (payLink) {
@@ -1720,7 +1761,7 @@
           : "Se abrió tu aplicación de correo con el detalle del pedido: envialo y la tienda te contactará para coordinar pago y entrega.") + "</p>" +
         (!payLink && CONFIG.transferInfo
           ? '<div style="background:var(--ivory);border-left:3px solid var(--gold);border-radius:8px;padding:.9rem 1rem;margin-top:.8rem;font-size:.9rem">' +
-            "<strong>💳 Pago por transferencia (total " + esc(money(total)) + "):</strong><br>" +
+            "<strong>💳 Pago por transferencia (total " + esc(money(totalFinal)) + "):</strong><br>" +
             esc(CONFIG.transferInfo) +
             '<br><span class="muted small">Poné el código ' + orderCode + " en el comentario de la transferencia.</span></div>"
           : "") +
@@ -1846,6 +1887,8 @@
 
   /* ---------- Inicio ---------- */
   $("#year").textContent = new Date().getFullYear();
+  // Banner de promoción de lanzamiento en la barra superior
+  if (CONFIG.promoBanner) $(".topbar span").textContent = CONFIG.promoBanner;
   renderCatalog();
   renderCart();
   renderAccountUI();

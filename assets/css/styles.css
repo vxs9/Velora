@@ -923,6 +923,10 @@ body.admin-open main > section:not(#adminPage) { display: none; }
 
 #prodForm .account-actions { margin-top: .4rem; }
 
+/* ---------- Código de descuento ---------- */
+.promo-row { display: flex; gap: .5rem; margin: .6rem 0 .2rem; }
+.promo-row .input { flex: 1; max-width: none; }
+
 /* ---------- Escáner de stock ---------- */
 .scan-modes { display: flex; gap: .5rem; margin-bottom: .9rem; flex-wrap: wrap; }
 

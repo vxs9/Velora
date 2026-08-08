@@ -24,7 +24,14 @@ var CONFIG = {
   // al cliente al confirmar el pedido. Dejalo en "" para ocultar la opción.
   // Ejemplo: "Banco Estado · CuentaRUT · N° 12345678 · RUT 12.345.678-9 ·
   //           A nombre de Juan Pérez · Enviá el comprobante a pedidosvelora@gmail.com"
-  transferInfo: ""
+  transferInfo: "",
+  // Promoción de lanzamiento: código de descuento y % que rebaja.
+  // Cambiá el código cuando quieras; dejá promoCode en "" para apagarla.
+  promoCode: "VELORA10",
+  promoPct: 10,
+  promoBanner: "🎁 10% OFF en tu primera compra con el código VELORA10 · Envío a todo Chile",
+  // Garantía que se muestra al pagar (genera confianza en tienda nueva):
+  guaranteeNote: "✔ Garantía Velora: si tu producto llega con cualquier problema, lo cambiamos o te devolvemos tu dinero."
 };
 
 /*
