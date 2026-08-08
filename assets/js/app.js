@@ -877,7 +877,7 @@
     document.body.classList.add("admin-open");
     $("#adminPage").hidden = false;
     window.scrollTo({ top: 0 });
-    var hash = view === "gestion" ? "#gestion" : "#panel";
+    var hash = view === "gestion" ? "#gestion" : (view === "proveedores" ? "#proveedores" : "#panel");
     if (location.hash !== hash) {
       try { history.pushState(null, "", hash); } catch (e) { /* file:// */ }
     }
@@ -897,12 +897,14 @@
       '<button class="btn btn-outline btn-sm account-logout" id="admBackStore">← Volver a la tienda</button>' +
       "</div>" +
       '<div class="admin-tabs">' +
-      '<button class="admin-tab' + (view !== "gestion" ? " active" : "") + '" id="tabProducts">🛍️ Productos</button>' +
+      '<button class="admin-tab' + (view !== "gestion" && view !== "proveedores" ? " active" : "") + '" id="tabProducts">🛍️ Productos</button>' +
       '<button class="admin-tab' + (view === "gestion" ? " active" : "") + '" id="tabDash">📊 Gestión y ganancias</button>' +
+      '<button class="admin-tab' + (view === "proveedores" ? " active" : "") + '" id="tabProviders">🔗 Proveedores</button>' +
       "</div>";
 
     var body = view === "gestion" ? adminDashHTML()
-      : (editId !== undefined ? adminFormHTML(editId) : adminProductsHTML());
+      : (view === "proveedores" ? adminProvidersHTML()
+      : (editId !== undefined ? adminFormHTML(editId) : adminProductsHTML()));
 
     $("#adminPage").innerHTML = head + '<div id="adminBody">' + body + "</div>";
 
@@ -912,8 +914,10 @@
     });
     $("#tabProducts").addEventListener("click", function () { showAdminPage("productos"); });
     $("#tabDash").addEventListener("click", function () { showAdminPage("gestion"); });
+    $("#tabProviders").addEventListener("click", function () { showAdminPage("proveedores"); });
 
     if (view === "gestion") wireAdminDash();
+    else if (view === "proveedores") wireAdminProviders();
     else if (editId !== undefined) wireAdminForm(editId);
     else wireAdminProducts();
   }
@@ -1107,6 +1111,81 @@
       renderCart();
       showAdminPage("productos");
       toast(p ? "Producto actualizado ✦" : "Producto agregado al catálogo ✦");
+    });
+  }
+
+  /* ==========================================================================
+     VISTA PROVEEDORES (pestaña del panel): links de origen y lista de compra
+     ========================================================================== */
+  function providerHost(url) {
+    var m = String(url || "").match(/^https:\/\/(?:www\.)?([^\/]+)/);
+    return m ? m[1] : "";
+  }
+
+  function providerRowHTML(p) {
+    var pct = stockPct(p);
+    var isLow = Number(p.maxStock) > 0 && pct <= 30;
+    var needed = Math.max(0, (Number(p.maxStock) || 0) - (Number(p.stock) || 0));
+    var restockCost = needed * (Number(p.cost) || 0);
+    var thumb = p.image ? '<img src="' + esc(p.image) + '" alt="">' : esc(p.emoji || "🛍️");
+    return '<div class="prod-row' + (isLow ? " prod-low" : "") + '">' +
+      '<div class="cart-thumb">' + thumb + "</div>" +
+      '<div class="prod-info">' +
+      "<strong>" + esc(p.name) + "</strong>" +
+      '<span class="small">Stock: <strong>' + Number(p.stock) + "</strong> (" + pct + "%)" +
+      (isLow ? ' <span style="color:#b0433f">⚠</span>' : "") +
+      (needed > 0
+        ? " · para volver al 100%: <strong>" + needed + " uds.</strong>" +
+          (restockCost ? " ≈ " + esc(money(restockCost)) : "")
+        : " · completo ✔") +
+      "</span>" +
+      '<span class="muted small">' +
+      (Number(p.cost) ? "Costo: " + esc(money(p.cost)) + "/ud." : "Sin costo cargado") +
+      (p.providerLink ? " · " + esc(providerHost(p.providerLink)) : "") +
+      "</span></div>" +
+      '<div class="actions">' +
+      (p.providerLink
+        ? '<a class="btn btn-sm btn-gold" href="' + esc(p.providerLink) + '" target="_blank" rel="noopener noreferrer">Ir al proveedor ↗</a>'
+        : '<button class="btn btn-sm btn-outline" data-edit="' + esc(p.id) + '">＋ Agregar link</button>') +
+      "</div></div>";
+  }
+
+  function adminProvidersHTML() {
+    var list = getProducts();
+    var toBuy = list.filter(function (p) {
+      return Number(p.maxStock) > 0 && stockPct(p) <= 30;
+    }).sort(function (a, b) { return stockPct(a) - stockPct(b); });
+    var rest = list.filter(function (p) { return toBuy.indexOf(p) === -1; });
+    var missing = list.filter(function (p) { return !p.providerLink; }).length;
+
+    var totalNeeded = 0, totalCost = 0;
+    toBuy.forEach(function (p) {
+      var needed = Math.max(0, (Number(p.maxStock) || 0) - (Number(p.stock) || 0));
+      totalNeeded += needed;
+      totalCost += needed * (Number(p.cost) || 0);
+    });
+
+    return '<p class="muted small" style="margin-bottom:1rem">Cada producto guarda el link privado de donde lo comprás. Desde acá vas directo al proveedor para reponer lo que haga falta.' +
+      (missing ? ' <strong>' + missing + " producto" + (missing > 1 ? "s" : "") + " sin link todavía.</strong>" : "") + "</p>" +
+
+      '<div class="form-card">' +
+      "<h4>🛒 Para reponer ahora (al 30% o menos)</h4>" +
+      (toBuy.length
+        ? '<p class="muted small" style="margin-bottom:.8rem">Total estimado de esta compra: <strong>' +
+          totalNeeded + " unidades ≈ " + esc(money(totalCost)) + "</strong></p>" +
+          '<div class="prod-list">' + toBuy.map(providerRowHTML).join("") + "</div>"
+        : '<p class="form-ok">✔ Nada urgente: ningún producto bajo el 30% de stock.</p>') +
+      "</div>" +
+
+      '<div class="form-card">' +
+      "<h4>📋 Todos los productos y sus proveedores</h4>" +
+      '<div class="prod-list">' + rest.map(providerRowHTML).join("") + "</div>" +
+      "</div>";
+  }
+
+  function wireAdminProviders() {
+    $all("[data-edit]").forEach(function (b) {
+      b.addEventListener("click", function () { showAdminPage("productos", b.getAttribute("data-edit")); });
     });
   }
 
@@ -1614,7 +1693,7 @@
     var sectionLink = t.closest('a[href^="#"]');
     if (sectionLink) {
       var href = sectionLink.getAttribute("href");
-      if (href && href !== "#" && href !== "#cuenta" && href !== "#panel" && href !== "#gestion") {
+      if (href && href !== "#" && href !== "#cuenta" && href !== "#panel" && href !== "#gestion" && href !== "#proveedores") {
         hideAccountPage();
         hideAdminPage();
       }
@@ -1628,6 +1707,8 @@
       if (isCreator()) showAdminPage("productos");
     } else if (location.hash === "#gestion") {
       if (isCreator()) showAdminPage("gestion");
+    } else if (location.hash === "#proveedores") {
+      if (isCreator()) showAdminPage("proveedores");
     } else {
       hideAccountPage();
       hideAdminPage();
@@ -1678,4 +1759,5 @@
   if (location.hash === "#cuenta" && state.session) showAccountPage();
   else if (location.hash === "#panel" && isCreator()) showAdminPage("productos");
   else if (location.hash === "#gestion" && isCreator()) showAdminPage("gestion");
+  else if (location.hash === "#proveedores" && isCreator()) showAdminPage("proveedores");
 })();
