@@ -131,6 +131,37 @@ img { max-width: 100%; display: block; }
   padding: 0 4px;
 }
 
+/* ---------- Barra de secciones (estilo boutique) ---------- */
+.catnav {
+  display: flex;
+  justify-content: center;
+  gap: 1.6rem;
+  padding: .55rem 1rem;
+  background: var(--ivory);
+  border-bottom: 1px solid var(--gold-soft);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  white-space: nowrap;
+}
+.catnav::-webkit-scrollbar { display: none; }
+.catnav a {
+  color: var(--ink);
+  text-decoration: none;
+  font-size: .78rem;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  padding: .2rem 0;
+  border-bottom: 2px solid transparent;
+  transition: border-color .15s, color .15s;
+  flex-shrink: 0;
+}
+.catnav a:hover { border-bottom-color: var(--gold); color: var(--gold-dark); }
+
+/* Las páginas completas (cuenta / panel) también ocultan la barra */
+body.account-open .catnav, body.admin-open .catnav { display: none; }
+
 /* ---------- Drawers ---------- */
 .drawer {
   position: fixed;

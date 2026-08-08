@@ -7,7 +7,7 @@
         content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'none'; base-uri 'none'; form-action 'none'">
   <meta name="description" content="Velora — Tienda online elegante. Selección cuidada, compra protegida y atención cercana.">
   <title>Velora · Tienda online</title>
-  <link rel="stylesheet" href="assets/css/styles.css">
+  <link rel="stylesheet" href="assets/css/styles.css?v=3">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9C%A6%3C/text%3E%3C/svg%3E">
 </head>
 <body>
@@ -24,7 +24,7 @@
     </button>
 
     <a class="brand" href="#inicio" id="brandLink" aria-label="Velora — inicio">
-      <svg class="logo" viewBox="0 0 258 56" role="img" aria-label="VELORA">
+      <svg class="logo" width="175" height="38" viewBox="0 0 258 56" role="img" aria-label="VELORA">
         <defs>
           <linearGradient id="lg1" x1="0" y1="0" x2="1" y2="1">
             <stop offset="0" stop-color="#c9a469"/><stop offset="1" stop-color="#96754a"/>
@@ -49,10 +49,19 @@
     </div>
   </header>
 
+  <!-- ======= Barra de secciones (estilo boutique) ======= -->
+  <nav class="catnav" aria-label="Secciones de la tienda">
+    <a href="#inicio">Inicio</a>
+    <a href="#catalogo">Catálogo</a>
+    <a href="#ofertas">Ofertas</a>
+    <a href="#nosotros">Nosotros</a>
+    <a href="#contacto">Contacto</a>
+  </nav>
+
   <!-- ======= Menú lateral (3 barritas) ======= -->
   <nav class="drawer drawer-left" id="navDrawer" aria-label="Menú principal">
     <div class="drawer-head">
-      <svg class="logo logo-sm" viewBox="0 0 258 56" role="img" aria-label="VELORA">
+      <svg class="logo logo-sm" width="148" height="32" viewBox="0 0 258 56" role="img" aria-label="VELORA">
         <defs>
           <linearGradient id="lg2" x1="0" y1="0" x2="1" y2="1">
             <stop offset="0" stop-color="#c9a469"/><stop offset="1" stop-color="#96754a"/>
@@ -109,7 +118,7 @@
 
     <!-- ======= Inicio / Hero ======= -->
     <section class="hero" id="inicio">
-      <svg class="logo-mark" viewBox="0 0 60 56" role="img" aria-label="Velora">
+      <svg class="logo-mark" width="60" height="56" viewBox="0 0 60 56" role="img" aria-label="Velora">
         <defs>
           <linearGradient id="lg3" x1="0" y1="0" x2="1" y2="1">
             <stop offset="0" stop-color="#c9a469"/><stop offset="1" stop-color="#96754a"/>
@@ -191,7 +200,7 @@
 
   <!-- ======= Pie ======= -->
   <footer class="footer">
-    <svg class="logo logo-sm" viewBox="0 0 258 56" role="img" aria-label="VELORA">
+    <svg class="logo logo-sm" width="148" height="32" viewBox="0 0 258 56" role="img" aria-label="VELORA">
       <defs>
         <linearGradient id="lg4" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stop-color="#c9a469"/><stop offset="1" stop-color="#96754a"/>
@@ -217,7 +226,7 @@
 
   <div class="toast" id="toast" hidden></div>
 
-  <script src="assets/js/data.js"></script>
-  <script src="assets/js/app.js"></script>
+  <script src="assets/js/data.js?v=3"></script>
+  <script src="assets/js/app.js?v=3"></script>
 </body>
 </html>
