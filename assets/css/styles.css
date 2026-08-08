@@ -75,6 +75,11 @@ img { max-width: 100%; display: block; }
 .brand-mark { color: var(--gold); font-size: 1.1rem; }
 .brand-name { font-size: 1.25rem; letter-spacing: .28em; }
 
+/* Logo dibujado (SVG): la "V" de trazos curvos con el destello ✦ */
+.logo { height: 38px; width: auto; display: block; color: var(--ink); }
+.logo-sm { height: 32px; }
+.logo-mark { height: 58px; width: auto; margin: 0 auto .6rem; display: block; }
+
 .header-actions { display: flex; align-items: center; gap: .35rem; }
 
 .icon-btn {
@@ -926,7 +931,27 @@ body.admin-open main > section:not(#adminPage) { display: none; }
 /* ---------- Responsive ---------- */
 @media (max-width: 640px) {
   .icon-label { display: none; }
-  .brand-name { font-size: 1.05rem; letter-spacing: .2em; }
-  .trust-item { min-width: 100%; }
-  .hero { padding: 3rem 1.2rem 2.5rem; }
+  .logo { height: 30px; }
+
+  /* Hero compacto en celular: que el catálogo aparezca enseguida */
+  .hero { padding: 1.6rem 1.2rem 1.4rem; }
+  .logo-mark { height: 44px; margin-bottom: .3rem; }
+  .hero-kicker { display: none; }
+  .hero h1 { font-size: 1.5rem; margin-bottom: .5rem; }
+  .hero-sub { font-size: .9rem; margin-bottom: 1rem; }
+  .hero-cta { margin-bottom: 1.1rem; gap: .5rem; }
+  .hero-cta .btn { padding: .55rem 1.05rem; font-size: .85rem; }
+
+  /* Las 3 promesas pasan de tarjetas apiladas a mini-sellos en una fila */
+  .trust-row { gap: .45rem; flex-wrap: nowrap; }
+  .trust-item {
+    min-width: 0;
+    flex: 1;
+    padding: .5rem .35rem;
+    align-items: center;
+    text-align: center;
+    gap: 0;
+  }
+  .trust-item strong { font-size: .7rem; line-height: 1.25; }
+  .trust-item span { display: none; }
 }
