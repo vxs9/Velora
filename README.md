@@ -23,7 +23,7 @@ Construida desde cero, sin dependencias externas, y publicada gratis en GitHub P
 ## Tu usuario como creador
 
 1. Entrá a la tienda y tocá **Entrar** (arriba a la derecha) → **Crear cuenta**.
-2. Registrate con el email **jhabetvaldivia808@gmail.com** (el que está configurado como creador).
+2. Registrate con el email **pedidosvelora@gmail.com** (el que está configurado como creador).
 3. Al iniciar sesión con ese email vas a ver el **⚙ Panel del creador** en el menú de 3 barritas,
    donde podés cargar tus productos: nombre, precio, precio anterior (para ofertas), stock,
    foto (URL), emoji y link de pago.
