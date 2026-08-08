@@ -14,10 +14,10 @@
 
 var CONFIG = {
   storeName: "Áurea",
-  creatorEmail: "vicente.empres4@gmail.com",
+  creatorEmail: "jhabetvaldivia808@gmail.com",
   currency: "$",            // pesos chilenos
   checkoutUrl: "", // ej: "https://mpago.la/xxxxxx" o "https://buy.stripe.com/xxxxxx"
-  contactEmail: "vicente.empres4@gmail.com",
+  contactEmail: "jhabetvaldivia808@gmail.com",
   // Nota de envío que ven los clientes (la tienda despacha desde Batuco, RM):
   shippingNote: "📦 Envío a todo Chile: 1–2 días hábiles en la RM, 2–5 días en regiones."
 };
