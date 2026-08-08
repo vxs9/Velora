@@ -19,7 +19,12 @@ var CONFIG = {
   checkoutUrl: "", // ej: "https://mpago.la/xxxxxx" o "https://buy.stripe.com/xxxxxx"
   contactEmail: "pedidosvelora@gmail.com",
   // Nota de envío que ven los clientes (la tienda despacha desde Batuco, RM):
-  shippingNote: "📦 Envío a todo Chile: 1–2 días hábiles en la RM, 2–5 días en regiones."
+  shippingNote: "📦 Envío a todo Chile: 1–2 días hábiles en la RM, 2–5 días en regiones.",
+  // Datos para pago por transferencia bancaria. Completalos y se mostrarán
+  // al cliente al confirmar el pedido. Dejalo en "" para ocultar la opción.
+  // Ejemplo: "Banco Estado · CuentaRUT · N° 12345678 · RUT 12.345.678-9 ·
+  //           A nombre de Juan Pérez · Enviá el comprobante a pedidosvelora@gmail.com"
+  transferInfo: ""
 };
 
 /*

@@ -1121,6 +1121,12 @@
         '<p class="muted">' + (payLink
           ? "Completá el pago en la ventana que se abrió. Apenas se acredite, coordinamos la entrega por email o WhatsApp."
           : "Se abrió tu aplicación de correo con el detalle del pedido: envialo y la tienda te contactará para coordinar pago y entrega.") + "</p>" +
+        (!payLink && CONFIG.transferInfo
+          ? '<div style="background:var(--ivory);border-left:3px solid var(--gold);border-radius:8px;padding:.9rem 1rem;margin-top:.8rem;font-size:.9rem">' +
+            "<strong>💳 Pago por transferencia (total " + esc(money(total)) + "):</strong><br>" +
+            esc(CONFIG.transferInfo) +
+            '<br><span class="muted small">Poné el código ' + orderCode + " en el comentario de la transferencia.</span></div>"
+          : "") +
         '<button class="btn btn-primary btn-block" data-close style="margin-top:1rem">Seguir explorando</button>'
       );
     });
