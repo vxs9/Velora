@@ -737,6 +737,7 @@
     if (!state.session) { authModal("login"); return; }
     renderAccountPage();
     closeAll();
+    hideAdminPage();
     document.body.classList.add("account-open");
     $("#accountPage").hidden = false;
     window.scrollTo({ top: 0 });
@@ -862,52 +863,111 @@
   }
 
   /* ==========================================================================
-     PANEL DEL CREADOR
+     PANEL DEL CREADOR — página completa con pestañas
+     Vistas: "productos" (lista + formulario) y "gestion" (dashboard).
      ========================================================================== */
-  function adminPanel() {
+  function adminPanel() { showAdminPage("productos"); }
+
+  function showAdminPage(view, editId) {
     if (!isCreator()) { toast("Solo el creador puede entrar acá"); return; }
-    var list = getProducts();
-    openModal(
-      "<h3>⚙ Panel del creador</h3>" +
-      '<p class="muted small">Agregá, editá o quitá productos del catálogo. Los cambios se guardan en este navegador; para hacerlos permanentes para todos los visitantes, exportá el catálogo y pedime que lo suba al sitio.</p>' +
-      (lowStockProducts().length
-        ? '<div class="alert-low">⚠ <strong>Stock bajo:</strong> ' +
-          lowStockProducts().map(function (p) { return esc(p.name) + " (" + stockPct(p) + "%)"; }).join(", ") + "</div>"
-        : "") +
-      '<div style="display:flex;gap:.6rem;flex-wrap:wrap;margin:1rem 0">' +
-      '<button class="btn btn-primary btn-sm" id="admDash">📊 Gestión y ganancias</button>' +
+    closeAll();
+    hideAccountPage();
+    renderAdminPage(view, editId);
+    document.body.classList.add("admin-open");
+    $("#adminPage").hidden = false;
+    window.scrollTo({ top: 0 });
+    var hash = view === "gestion" ? "#gestion" : "#panel";
+    if (location.hash !== hash) {
+      try { history.pushState(null, "", hash); } catch (e) { /* file:// */ }
+    }
+  }
+
+  function hideAdminPage() {
+    document.body.classList.remove("admin-open");
+    $("#adminPage").hidden = true;
+  }
+
+  function renderAdminPage(view, editId) {
+    var head =
+      '<div class="account-head">' +
+      '<div class="avatar">⚙</div>' +
+      "<div><h2>Panel del creador</h2>" +
+      '<p class="muted small">Los cambios se guardan en este navegador. Para fijarlos para todos los visitantes, exportá el catálogo y pasámelo en el chat.</p></div>' +
+      '<button class="btn btn-outline btn-sm account-logout" id="admBackStore">← Volver a la tienda</button>' +
+      "</div>" +
+      '<div class="admin-tabs">' +
+      '<button class="admin-tab' + (view !== "gestion" ? " active" : "") + '" id="tabProducts">🛍️ Productos</button>' +
+      '<button class="admin-tab' + (view === "gestion" ? " active" : "") + '" id="tabDash">📊 Gestión y ganancias</button>' +
+      "</div>";
+
+    var body = view === "gestion" ? adminDashHTML()
+      : (editId !== undefined ? adminFormHTML(editId) : adminProductsHTML());
+
+    $("#adminPage").innerHTML = head + '<div id="adminBody">' + body + "</div>";
+
+    $("#admBackStore").addEventListener("click", function () {
+      hideAdminPage();
+      try { history.pushState(null, "", "#inicio"); } catch (e) { /* file:// */ }
+    });
+    $("#tabProducts").addEventListener("click", function () { showAdminPage("productos"); });
+    $("#tabDash").addEventListener("click", function () { showAdminPage("gestion"); });
+
+    if (view === "gestion") wireAdminDash();
+    else if (editId !== undefined) wireAdminForm(editId);
+    else wireAdminProducts();
+  }
+
+  /* ---------- Vista: lista de productos ---------- */
+  function adminProductsHTML() {
+    var low = lowStockProducts();
+    return (low.length
+      ? '<div class="alert-low">⚠ <strong>Stock bajo:</strong> ' +
+        low.map(function (p) { return esc(p.name) + " (" + stockPct(p) + "%)"; }).join(", ") + "</div>"
+      : "") +
+      '<div class="account-actions" style="margin-bottom:1.2rem">' +
       '<button class="btn btn-gold btn-sm" id="admNew">＋ Nuevo producto</button>' +
       '<button class="btn btn-outline btn-sm" id="admExport">Exportar catálogo</button>' +
       '<button class="btn btn-outline btn-sm" id="admReset">Restaurar original</button>' +
       "</div>" +
-      '<div class="admin-list">' +
-      list.map(function (p) {
-        return '<div class="admin-row"><span>' + esc(p.emoji || "🛍️") + " <strong>" + esc(p.name) + "</strong> · " +
-          esc(money(p.price)) + " · stock " + Number(p.stock) +
+      '<div class="prod-list">' +
+      getProducts().map(function (p) {
+        var pct = stockPct(p);
+        var isLow = Number(p.maxStock) > 0 && pct <= 30;
+        var thumb = p.image
+          ? '<img src="' + esc(p.image) + '" alt="">'
+          : esc(p.emoji || "🛍️");
+        return '<div class="prod-row' + (isLow ? " prod-low" : "") + '">' +
+          '<div class="cart-thumb">' + thumb + "</div>" +
+          '<div class="prod-info">' +
+          "<strong>" + esc(p.name) + "</strong>" +
+          '<span class="muted small">' + esc(p.category) + " · " + esc(money(p.price)) +
+          (Number(p.cost) ? " · ganancia " + esc(money(Number(p.price) - Number(p.cost))) + "/ud." : "") + "</span>" +
+          '<span class="small">Stock: <strong>' + Number(p.stock) + "</strong> (" + pct + "%)" +
+          (isLow ? ' <span style="color:#b0433f">⚠ reponer</span>' : "") +
           (p.providerLink ? ' · <a href="' + esc(p.providerLink) + '" target="_blank" rel="noopener noreferrer">proveedor ↗</a>' : "") +
-          "</span>" +
-          '<span class="actions">' +
-          '<button class="btn btn-sm btn-outline" data-edit="' + esc(p.id) + '">Editar</button>' +
+          "</span></div>" +
+          '<div class="actions">' +
+          '<button class="btn btn-sm btn-outline" data-edit="' + esc(p.id) + '">✏️ Editar</button>' +
           '<button class="btn btn-sm btn-danger" data-del="' + esc(p.id) + '">✕</button>' +
-          "</span></div>";
+          "</div></div>";
       }).join("") +
       "</div>" +
-      '<div class="admin-note">💡 <strong>Para cobrar de verdad:</strong> creá tu cuenta gratis en Mercado Pago o Stripe, generá un "link de pago" por producto y pegalo en el campo "Link de pago" al editar cada producto. El botón de pagar del checkout llevará a tus clientes directo ahí. Los detalles están en el README del proyecto.</div>'
-    );
+      '<div class="admin-note">💡 <strong>Para cobrar de verdad:</strong> creá tu cuenta gratis en Mercado Pago, generá un "link de pago" por producto y pegalo en el campo "Link de pago" al editar cada producto. El botón de pagar del checkout llevará a tus clientes directo ahí.</div>';
+  }
 
-    $("#admDash").addEventListener("click", dashboard);
-    $("#admNew").addEventListener("click", function () { productForm(null); });
+  function wireAdminProducts() {
+    $("#admNew").addEventListener("click", function () { showAdminPage("productos", null); });
     $("#admExport").addEventListener("click", exportCatalog);
     $("#admReset").addEventListener("click", function () {
       if (confirm("¿Restaurar el catálogo original de ejemplo? Se perderán tus cambios de este navegador.")) {
         store.del(KEYS.products);
         renderCatalog(); renderCart();
-        adminPanel();
+        showAdminPage("productos");
         toast("Catálogo restaurado");
       }
     });
     $all("[data-edit]").forEach(function (b) {
-      b.addEventListener("click", function () { productForm(b.getAttribute("data-edit")); });
+      b.addEventListener("click", function () { showAdminPage("productos", b.getAttribute("data-edit")); });
     });
     $all("[data-del]").forEach(function (b) {
       b.addEventListener("click", function () {
@@ -917,51 +977,96 @@
           delete state.cart[p.id];
           saveCart();
           renderCatalog(); renderCart();
-          adminPanel();
+          showAdminPage("productos");
           toast("Producto eliminado");
         }
       });
     });
   }
 
-  function productForm(id) {
-    var p = id ? findProduct(id) : {
+  /* ---------- Vista: formulario de producto (con etiquetas claras) ---------- */
+  function field(label, hint, inputHTML) {
+    return '<div class="form-field"><label class="field-label">' + label +
+      (hint ? ' <span class="field-hint">' + hint + "</span>" : "") +
+      "</label>" + inputHTML + "</div>";
+  }
+
+  function adminFormHTML(editId) {
+    var p = editId ? findProduct(editId) : {
       id: "p" + Math.floor(Math.random() * 1e9).toString(36),
       name: "", category: "", price: "", oldPrice: "", emoji: "🛍️",
       image: "", desc: "", stock: 10, paymentLink: ""
     };
-    if (!p) return;
-    openModal(
-      "<h3>" + (id ? "Editar producto" : "Nuevo producto") + "</h3>" +
-      '<form id="prodForm">' +
-      '<input class="input" id="pfName" placeholder="Nombre" required maxlength="90" value="' + esc(p.name) + '">' +
-      '<input class="input" id="pfCat" placeholder="Categoría (ej: Tecnología)" required maxlength="40" value="' + esc(p.category) + '">' +
-      '<input class="input" id="pfPrice" type="number" min="0" step="0.01" placeholder="Precio de venta" required value="' + esc(p.price) + '">' +
-      '<input class="input" id="pfCost" type="number" min="0" step="0.01" placeholder="Costo por unidad (privado, para calcular ganancias)" value="' + esc(p.cost || "") + '">' +
-      '<input class="input" id="pfOld" type="number" min="0" step="0.01" placeholder="Precio anterior (opcional, para ofertas)" value="' + esc(p.oldPrice || "") + '">' +
-      '<input class="input" id="pfStock" type="number" min="0" step="1" placeholder="Stock" required value="' + esc(p.stock) + '">' +
-      '<input class="input" id="pfRating" type="number" min="0" max="5" step="0.1" placeholder="Valoración del producto (0 a 5, la del listing del proveedor)" value="' + esc(p.rating || "") + '">' +
-      '<input class="input" id="pfRatingCount" type="number" min="0" step="1" placeholder="Cantidad de valoraciones del listing" value="' + esc(p.ratingCount || "") + '">' +
-      '<input class="input" id="pfEmoji" placeholder="Emoji (si no hay foto)" maxlength="4" value="' + esc(p.emoji) + '">' +
-      '<input class="input" id="pfImage" type="url" placeholder="URL de imagen (opcional, https://...)" value="' + esc(p.image) + '">' +
-      '<input class="input" id="pfPay" type="url" placeholder="Link de pago (opcional, Mercado Pago/Stripe)" value="' + esc(p.paymentLink || "") + '">' +
-      '<input class="input" id="pfProv" type="url" placeholder="Link del proveedor (privado, solo lo ves vos)" value="' + esc(p.providerLink || "") + '">' +
-      '<textarea class="input" id="pfDesc" rows="3" placeholder="Descripción corta" required maxlength="200">' + esc(p.desc) + "</textarea>" +
-      '<button class="btn btn-primary btn-block" type="submit">Guardar</button>' +
-      "</form>"
-    );
+    if (!p) return adminProductsHTML();
+
+    return '<form id="prodForm">' +
+      '<h3 class="form-section-title">' + (editId ? "✏️ Editando: " + esc(p.name) : "＋ Nuevo producto") + "</h3>" +
+
+      '<div class="form-card"><h4>Lo básico</h4><div class="form-grid">' +
+      field("Nombre del producto", "",
+        '<input class="input" id="pfName" required maxlength="90" placeholder="Ej: Auriculares inalámbricos Pro" value="' + esc(p.name) + '">') +
+      field("Categoría", "arma los filtros del catálogo",
+        '<input class="input" id="pfCat" required maxlength="40" placeholder="Ej: Tecnología" value="' + esc(p.category) + '">') +
+      "</div>" +
+      field("Descripción corta", "lo que ve el cliente bajo el nombre",
+        '<textarea class="input" id="pfDesc" rows="2" required maxlength="200" placeholder="Ej: Cancelación de ruido y 24 h de batería.">' + esc(p.desc) + "</textarea>") +
+      '<div class="form-grid">' +
+      field("Emoji", "se muestra si no hay foto",
+        '<input class="input" id="pfEmoji" maxlength="4" value="' + esc(p.emoji) + '">') +
+      field("Foto (URL)", "opcional, debe empezar con https://",
+        '<input class="input" id="pfImage" type="url" placeholder="https://…" value="' + esc(p.image) + '">') +
+      "</div></div>" +
+
+      '<div class="form-card"><h4>Precios</h4><div class="form-grid form-grid-3">' +
+      field("Precio de venta", "lo que paga el cliente",
+        '<input class="input" id="pfPrice" type="number" min="0" step="0.01" required value="' + esc(p.price) + '">') +
+      field("Precio anterior", "opcional: si lo ponés, aparece tachado y el producto entra a Ofertas",
+        '<input class="input" id="pfOld" type="number" min="0" step="0.01" value="' + esc(p.oldPrice || "") + '">') +
+      field("Costo por unidad", "privado: lo que te costó, para calcular tu ganancia",
+        '<input class="input" id="pfCost" type="number" min="0" step="0.01" value="' + esc(p.cost || "") + '">') +
+      "</div></div>" +
+
+      '<div class="form-card"><h4>Inventario</h4><div class="form-grid">' +
+      field("Stock disponible", "unidades que tenés para vender; 0 = agotado",
+        '<input class="input" id="pfStock" type="number" min="0" step="1" required value="' + esc(p.stock) + '">') +
+      "</div></div>" +
+
+      '<div class="form-card"><h4>Valoración del proveedor</h4><div class="form-grid">' +
+      field("Estrellas (0 a 5)", "copiá la del listing donde lo comprás, ej: 4.7",
+        '<input class="input" id="pfRating" type="number" min="0" max="5" step="0.1" value="' + esc(p.rating || "") + '">') +
+      field("Cantidad de valoraciones", "ej: 2341",
+        '<input class="input" id="pfRatingCount" type="number" min="0" step="1" value="' + esc(p.ratingCount || "") + '">') +
+      "</div></div>" +
+
+      '<div class="form-card"><h4>Links</h4><div class="form-grid">' +
+      field("Link de pago", "Mercado Pago/Stripe; el checkout manda al cliente ahí",
+        '<input class="input" id="pfPay" type="url" placeholder="https://mpago.la/…" value="' + esc(p.paymentLink || "") + '">') +
+      field("Link del proveedor", "privado, solo lo ves vos en este panel",
+        '<input class="input" id="pfProv" type="url" placeholder="https://aliexpress.com/…" value="' + esc(p.providerLink || "") + '">') +
+      "</div></div>" +
+
+      '<div class="account-actions">' +
+      '<button class="btn btn-primary" type="submit">Guardar producto</button>' +
+      '<button class="btn btn-outline" type="button" id="pfCancel">Cancelar</button>' +
+      "</div></form>";
+  }
+
+  function wireAdminForm(editId) {
+    var p = editId ? findProduct(editId) : null;
+    var pid = p ? p.id : $("#prodForm") && null;
+    $("#pfCancel").addEventListener("click", function () { showAdminPage("productos"); });
     $("#prodForm").addEventListener("submit", function (e) {
       e.preventDefault();
       var img = $("#pfImage").value.trim();
       var pay = $("#pfPay").value.trim();
       var prov = $("#pfProv").value.trim();
-      if (img && img.indexOf("https://") !== 0) { toast("La imagen debe empezar con https://"); return; }
+      if (img && img.indexOf("https://") !== 0) { toast("La foto debe empezar con https://"); return; }
       if (pay && pay.indexOf("https://") !== 0) { toast("El link de pago debe empezar con https://"); return; }
       if (prov && prov.indexOf("https://") !== 0) { toast("El link del proveedor debe empezar con https://"); return; }
       var newStock = Math.max(0, Math.floor(Number($("#pfStock").value) || 0));
-      var oldStock = id ? Number(p.stock) || 0 : 0;
+      var oldStock = p ? Number(p.stock) || 0 : 0;
       var next = {
-        id: p.id,
+        id: p ? p.id : "p" + Math.floor(Math.random() * 1e9).toString(36),
         name: $("#pfName").value.trim(),
         category: $("#pfCat").value.trim(),
         price: Number($("#pfPrice").value) || 0,
@@ -970,7 +1075,7 @@
         stock: newStock,
         // Si el stock sube (o el producto es nuevo), esa cifra pasa a ser la
         // base para el aviso del 30%; si baja o queda igual, se conserva.
-        maxStock: newStock > oldStock ? newStock : (Number(p.maxStock) || newStock),
+        maxStock: newStock > oldStock ? newStock : ((p && Number(p.maxStock)) || newStock),
         rating: Math.max(0, Math.min(5, Number($("#pfRating").value) || 0)),
         ratingCount: Math.max(0, Math.floor(Number($("#pfRatingCount").value) || 0)),
         emoji: $("#pfEmoji").value.trim() || "🛍️",
@@ -982,7 +1087,7 @@
       // Registra el cambio de stock como movimiento de gestión.
       if (newStock !== oldStock) {
         addMove({
-          date: today(), id: p.id, name: next.name,
+          date: today(), id: next.id, name: next.name,
           type: newStock > oldStock ? "ingreso" : "ajuste",
           qty: Math.abs(newStock - oldStock),
           price: next.price, cost: next.cost
@@ -990,21 +1095,22 @@
       }
       var list = getProducts().slice();
       var idx = -1;
-      for (var i = 0; i < list.length; i++) if (list[i].id === p.id) idx = i;
+      for (var i = 0; i < list.length; i++) if (list[i].id === next.id) idx = i;
       if (idx === -1) list.push(next); else list[idx] = next;
       saveProducts(list);
       renderCatalog();
       renderCart();
-      adminPanel();
-      toast(id ? "Producto actualizado" : "Producto agregado al catálogo");
+      showAdminPage("productos");
+      toast(p ? "Producto actualizado ✦" : "Producto agregado al catálogo ✦");
     });
   }
 
   /* ==========================================================================
-     PANEL DE GESTIÓN (solo creador): stock, movimientos, ganancias y gráfico
+     VISTA GESTIÓN (pestaña del panel): stock, movimientos, ganancias, gráfico
      ========================================================================== */
-  function dashboard() {
-    if (!isCreator()) { toast("Solo el creador puede entrar acá"); return; }
+  function dashboard() { showAdminPage("gestion"); }
+
+  function adminDashHTML() {
     var moves = getMoves();
     var sales = moves.filter(function (m) { return m.type === "venta"; });
 
@@ -1080,39 +1186,42 @@
           : (m.type === "ingreso" ? "ingreso de stock" : "ajuste de stock")) + "</span></div>";
     }).join("") || '<p class="muted small">Todavía no hay movimientos. Se registran solos con cada compra, o a mano con los botones de arriba.</p>';
 
-    openModal(
-      "<h3>📊 Gestión y ganancias</h3>" +
-      (low.length
-        ? '<div class="alert-low">⚠ <strong>Reponer pronto:</strong> ' +
-          low.map(function (p) { return esc(p.name) + " (" + stockPct(p) + "%)"; }).join(", ") +
-          " — llegaron al 30% del stock o menos.</div>"
-        : '<p class="form-ok">✔ Ningún producto bajo el 30% de stock.</p>') +
+    return (low.length
+      ? '<div class="alert-low">⚠ <strong>Reponer pronto:</strong> ' +
+        low.map(function (p) { return esc(p.name) + " (" + stockPct(p) + "%)"; }).join(", ") +
+        " — llegaron al 30% del stock o menos.</div>"
+      : '<p class="form-ok">✔ Ningún producto bajo el 30% de stock.</p>') +
       '<div class="dash-tiles">' +
       '<div class="tile"><span>Ventas</span><strong>' + esc(money(revenue)) + "</strong></div>" +
       '<div class="tile"><span>Ganancia</span><strong>' + esc(money(profit)) + "</strong></div>" +
       '<div class="tile"><span>Unidades vendidas</span><strong>' + units + "</strong></div>" +
       '<div class="tile"><span>Stock actual (' + stockUnits + ' uds.)</span><strong>' + esc(money(stockValue)) + " invertidos</strong></div>" +
       "</div>" +
-      "<h3 class='dash-sub'>Ganancia por día (últimos 14 días)</h3>" +
-      chartHTML +
-      '<p class="muted small">Última semana: <strong>' + esc(money(lastWeek)) + "</strong> · Semana anterior: " +
-      esc(money(prevWeek)) + " · Incremento: <strong>" + (growth >= 0 ? "+" : "") + growth + "%</strong></p>" +
-      '<div style="display:flex;gap:.6rem;flex-wrap:wrap;margin:1rem 0">' +
+      '<div class="account-actions" style="margin-bottom:1rem">' +
       '<button class="btn btn-gold btn-sm" id="dashSale">➕ Registrar venta</button>' +
       '<button class="btn btn-primary btn-sm" id="dashIntake">📦 Registrar ingreso</button>' +
       '<button class="btn btn-outline btn-sm" id="dashCSV">⬇ Exportar a Excel</button>' +
-      '<button class="btn btn-outline btn-sm" id="dashBack">← Panel del creador</button>' +
       "</div>" +
+      '<div class="form-card">' +
+      "<h4>Ganancia por día (últimos 14 días)</h4>" +
+      chartHTML +
+      '<p class="muted small" style="margin-top:.6rem">Última semana: <strong>' + esc(money(lastWeek)) + "</strong> · Semana anterior: " +
+      esc(money(prevWeek)) + " · Incremento: <strong>" + (growth >= 0 ? "+" : "") + growth + "%</strong></p>" +
+      "</div>" +
+      '<div class="form-card">' +
+      "<h4>Stock por producto</h4>" +
       '<div class="table-wrap"><table class="dash-table"><thead><tr>' +
       "<th>Producto</th><th>Stock</th><th>Vendidos</th><th>Restante</th><th>Ganancia/ud.</th>" +
-      "</tr></thead><tbody>" + stockRows + "</tbody></table></div>" +
-      "<h3 class='dash-sub'>Últimos movimientos</h3>" + lastMoves +
-      '<p class="muted small" style="margin-top:.8rem">💡 Las compras hechas en este navegador se registran solas. Los pedidos que te lleguen por email desde otros dispositivos, registralos con "➕ Registrar venta" para que el stock y las ganancias queden al día.</p>'
-    );
+      "</tr></thead><tbody>" + stockRows + "</tbody></table></div></div>" +
+      '<div class="form-card">' +
+      "<h4>Últimos movimientos</h4>" + lastMoves +
+      '<p class="muted small" style="margin-top:.8rem">💡 Las compras hechas en este navegador se registran solas. Los pedidos que te lleguen por email desde otros dispositivos, registralos con "➕ Registrar venta" para que el stock y las ganancias queden al día.</p>' +
+      "</div>";
+  }
 
+  function wireAdminDash() {
     $("#dashSale").addEventListener("click", function () { moveForm("venta"); });
     $("#dashIntake").addEventListener("click", function () { moveForm("ingreso"); });
-    $("#dashBack").addEventListener("click", adminPanel);
     $("#dashCSV").addEventListener("click", exportMovesCSV);
   }
 
@@ -1351,19 +1460,27 @@
     var navLink = t.closest("[data-nav]");
     if (navLink && navLink.getAttribute("href") !== "#") { closeAll(); }
 
-    // Cualquier link a una sección de la tienda cierra la página Mi cuenta.
+    // Cualquier link a una sección de la tienda cierra las páginas completas.
     var sectionLink = t.closest('a[href^="#"]');
     if (sectionLink) {
       var href = sectionLink.getAttribute("href");
-      if (href && href !== "#" && href !== "#cuenta") hideAccountPage();
+      if (href && href !== "#" && href !== "#cuenta" && href !== "#panel" && href !== "#gestion") {
+        hideAccountPage();
+        hideAdminPage();
+      }
     }
   });
 
   window.addEventListener("hashchange", function () {
     if (location.hash === "#cuenta") {
       if (state.session) showAccountPage();
+    } else if (location.hash === "#panel") {
+      if (isCreator()) showAdminPage("productos");
+    } else if (location.hash === "#gestion") {
+      if (isCreator()) showAdminPage("gestion");
     } else {
       hideAccountPage();
+      hideAdminPage();
     }
   });
 
@@ -1407,6 +1524,8 @@
   renderCatalog();
   renderCart();
   renderAccountUI();
-  // Si la página se abre directo en #cuenta y hay sesión, muestra el perfil.
+  // Si la página se abre directo en #cuenta/#panel/#gestion, restaura la vista.
   if (location.hash === "#cuenta" && state.session) showAccountPage();
+  else if (location.hash === "#panel" && isCreator()) showAdminPage("productos");
+  else if (location.hash === "#gestion" && isCreator()) showAdminPage("gestion");
 })();
