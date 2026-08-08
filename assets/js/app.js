@@ -287,7 +287,7 @@
     if (state.session) updateUserRecord({ cart: state.cart });
   }
 
-  function addToCart(id) {
+  function addToCart(id, sourceEl) {
     var p = findProduct(id);
     if (!p || Number(p.stock) === 0) return;
     var qty = (state.cart[id] || 0) + 1;
@@ -295,7 +295,84 @@
     state.cart[id] = qty;
     saveCart();
     renderCart();
-    toast("✦ Agregado al carrito");
+    if (!flyToCart(sourceEl, p)) toast("✦ Agregado al carrito");
+  }
+
+  /* ==========================================================================
+     ANIMACIÓN "VUELO AL CARRITO"
+     --------------------------------------------------------------------------
+     El producto vuela en arco hasta el carrito dejando una estela de
+     destellos dorados ✦ (la marca de Velora), y el carrito pulsa al
+     recibirlo. Es solo visual: no bloquea clics ni frena compras múltiples.
+     Devuelve false si no pudo animar (ahí se muestra el toast clásico).
+     ========================================================================== */
+  function flyToCart(fromEl, p) {
+    try {
+      if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return false;
+      var target = $("#btnCart");
+      if (!fromEl || !fromEl.getBoundingClientRect || !target) return false;
+      var a = fromEl.getBoundingClientRect();
+      var b = target.getBoundingClientRect();
+      if (!a.width || !b.width) return false;
+
+      var sx = a.left + a.width / 2, sy = a.top + a.height / 2;
+      var ex = b.left + b.width / 2, ey = b.top + b.height / 2;
+      // Punto de control por encima de la recta: da la curva del arco.
+      var cx = (sx + ex) / 2, cy = Math.min(sy, ey) - 130;
+      var DUR = 700;
+
+      function bez(t, p0, p1, p2) {
+        return (1 - t) * (1 - t) * p0 + 2 * (1 - t) * t * p1 + t * t * p2;
+      }
+
+      // Miniatura voladora del producto
+      var el = document.createElement("div");
+      el.className = "fly-item";
+      el.innerHTML = p.image
+        ? '<img src="' + esc(p.image) + '" alt="">'
+        : esc(p.emoji || "🛍️");
+      document.body.appendChild(el);
+
+      var frames = [];
+      for (var i = 0; i <= 20; i++) {
+        var t = i / 20;
+        frames.push({
+          transform: "translate(" + bez(t, sx, cx, ex) + "px," + bez(t, sy, cy, ey) +
+            "px) translate(-50%,-50%) scale(" + (1 - 0.68 * t) + ") rotate(" + t * 18 + "deg)",
+          opacity: t > 0.85 ? 1 - (t - 0.85) / 0.15 : 1
+        });
+      }
+      el.animate(frames, { duration: DUR, easing: "linear" }).onfinish = function () { el.remove(); };
+
+      // Estela de destellos ✦ a lo largo del arco
+      for (var s = 1; s <= 4; s++) {
+        (function (s) {
+          var t = s / 5;
+          var sp = document.createElement("span");
+          sp.className = "fly-spark";
+          sp.textContent = "✦";
+          sp.style.left = bez(t, sx, cx, ex) + "px";
+          sp.style.top = bez(t, sy, cy, ey) + "px";
+          document.body.appendChild(sp);
+          sp.animate([
+            { transform: "translate(-50%,-50%) scale(0) rotate(0deg)", opacity: 0 },
+            { transform: "translate(-50%,-50%) scale(1.1) rotate(45deg)", opacity: 1, offset: 0.4 },
+            { transform: "translate(-50%,-50%) scale(0) rotate(90deg)", opacity: 0 }
+          ], { duration: 460, delay: Math.max(0, DUR * t - 120), easing: "ease-out", fill: "backwards" })
+            .onfinish = function () { sp.remove(); };
+        })(s);
+      }
+
+      // El carrito "recibe" el producto: pulso + anillo dorado
+      setTimeout(function () {
+        target.classList.remove("cart-hit");
+        void target.offsetWidth; // reinicia la animación si llegan varios seguidos
+        target.classList.add("cart-hit");
+        setTimeout(function () { target.classList.remove("cart-hit"); }, 550);
+      }, DUR - 80);
+
+      return true;
+    } catch (e) { return false; }
   }
 
   function setQty(id, qty) {
@@ -1154,7 +1231,13 @@
     var t = e.target;
 
     var addBtn = t.closest("[data-add]");
-    if (addBtn) { addToCart(addBtn.getAttribute("data-add")); return; }
+    if (addBtn) {
+      // Origen visual del vuelo: la imagen de la tarjeta o del modal de detalle.
+      var scope = addBtn.closest(".card") || addBtn.closest(".modal-card");
+      var media = (scope && scope.querySelector(".card-media, .pd-media")) || addBtn;
+      addToCart(addBtn.getAttribute("data-add"), media);
+      return;
+    }
 
     var viewBtn = t.closest("[data-view]");
     if (viewBtn) { viewProduct(viewBtn.getAttribute("data-view")); return; }
