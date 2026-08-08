@@ -1,5 +1,5 @@
 /* ==========================================================================
-   ÁUREA — Lógica de la tienda
+   VELORA — Lógica de la tienda
    Carrito, cuentas de usuario, panel del creador, checkout y privacidad.
    Sin dependencias externas: todo corre en el navegador del visitante.
    ========================================================================== */
@@ -571,7 +571,7 @@
     openModal(
       "<h3>" + (isLogin ? "Iniciar sesión" : "Crear tu cuenta") + "</h3>" +
       '<p class="muted small">' + (isLogin
-        ? "Bienvenido de nuevo a Áurea."
+        ? "Bienvenido de nuevo a Velora."
         : "Solo pedimos lo mínimo para atenderte. Tu tarjeta nunca se guarda acá.") + "</p>" +
       '<form id="authForm">' +
       (isLogin ? "" : '<input class="input" type="text" id="authName" placeholder="Tu nombre" required maxlength="60">') +
@@ -1009,7 +1009,7 @@
     }).join("\r\n");
     var a = document.createElement("a");
     a.href = "data:text/csv;charset=utf-8," + encodeURIComponent(csv);
-    a.download = "aurea-gestion-" + today() + ".csv";
+    a.download = "velora-gestion-" + today() + ".csv";
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -1043,7 +1043,7 @@
       return p ? state.cart[id] + " × " + p.name + " — " + money(Number(p.price) * state.cart[id]) : "";
     }).filter(Boolean);
 
-    var orderCode = "AU-" + Math.floor(Math.random() * 900000 + 100000);
+    var orderCode = "VL-" + Math.floor(Math.random() * 900000 + 100000);
     var total = cartTotal();
 
     // Autocompleta con los datos guardados en el perfil.

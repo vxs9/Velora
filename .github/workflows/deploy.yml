@@ -1,4 +1,4 @@
-name: Deploy Áurea to GitHub Pages
+name: Deploy Velora to GitHub Pages
 
 # Publica la tienda automáticamente. Con el repositorio en Público,
 # este workflow habilita GitHub Pages solo y despliega en cada push.

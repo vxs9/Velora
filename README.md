@@ -1,10 +1,10 @@
-# ✦ ÁUREA — Tienda online
+# ✦ VELORA — Tienda online
 
 Tienda online elegante, pensada para transmitir confianza y profesionalidad.
 Construida desde cero, sin dependencias externas, y publicada gratis en GitHub Pages.
 
-> **¿No te gusta el nombre?** Decímelo y lo cambio en minutos. Algunas alternativas
-> que también transmiten elegancia: **Velora**, **Nordelle**, **Ambra**, **Lumina**, **Solaria**.
+> Nombre elegido: **Velora** (antes Áurea). Si algún día querés cambiarlo,
+> se hace en minutos.
 
 ---
 
@@ -65,7 +65,7 @@ de pago no cobran por abrir la cuenta, solo una comisión cuando efectivamente v
 | Cuenta en Mercado Pago / Stripe / PayPal | **$0** (solo comisión por venta) |
 | La tienda (este código) | **$0** |
 | **Total obligatorio para arrancar** | **$0** |
-| Dominio propio, ej. `aurea.shop` (opcional, más profesional) | US$ 10–15 por año |
+| Dominio propio, ej. `velora.cl` (opcional, más profesional) | US$ 10–15 por año |
 | Stock inicial de productos (si comprás para revender) | Depende de vos: se puede arrancar con poco (ej. US$ 100–200) o con dropshipping, sin stock |
 
 ---

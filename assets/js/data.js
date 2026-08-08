@@ -1,5 +1,5 @@
 /* ==========================================================================
-   ÁUREA — Configuración y catálogo inicial
+   VELORA — Configuración y catálogo inicial
    --------------------------------------------------------------------------
    EDITÁ ESTE ARCHIVO PARA PERSONALIZAR TU TIENDA (o usá el Panel del creador
    dentro de la página, que guarda los cambios en este navegador).
@@ -13,7 +13,7 @@
    ========================================================================== */
 
 var CONFIG = {
-  storeName: "Áurea",
+  storeName: "Velora",
   creatorEmail: "jhabetvaldivia808@gmail.com",
   currency: "$",            // pesos chilenos
   checkoutUrl: "", // ej: "https://mpago.la/xxxxxx" o "https://buy.stripe.com/xxxxxx"
