@@ -15,9 +15,11 @@
 var CONFIG = {
   storeName: "Áurea",
   creatorEmail: "vicente.empres4@gmail.com",
-  currency: "$",
+  currency: "$",            // pesos chilenos
   checkoutUrl: "", // ej: "https://mpago.la/xxxxxx" o "https://buy.stripe.com/xxxxxx"
-  contactEmail: "vicente.empres4@gmail.com"
+  contactEmail: "vicente.empres4@gmail.com",
+  // Nota de envío que ven los clientes (la tienda despacha desde Batuco, RM):
+  shippingNote: "📦 Envío a todo Chile: 1–2 días hábiles en la RM, 2–5 días en regiones."
 };
 
 /*
@@ -38,10 +40,17 @@ var CONFIG = {
     paymentLink — link de pago individual (opcional)
     providerLink — link del proveedor (Temu/AliExpress/etc.); privado,
                    solo se ve en el Panel del creador
+    rating      — valoración del producto (0 a 5). IMPORTANTE: los valores de
+                  abajo son de EJEMPLO, típicos de estas categorías. Cuando
+                  cargues tus productos reales, copiá la valoración real del
+                  listing de tu proveedor (editable en el Panel del creador).
+    ratingCount — cantidad de valoraciones que muestra ese listing
 */
 var PRODUCTS = [
   {
     id: "p1",
+    rating: 4.7,
+    ratingCount: 2341,
     name: "Auriculares inalámbricos Pro",
     category: "Tecnología",
     price: 34999,
@@ -54,6 +63,8 @@ var PRODUCTS = [
   },
   {
     id: "p2",
+    rating: 4.6,
+    ratingCount: 1876,
     name: "Smartwatch Serie S",
     category: "Tecnología",
     price: 45999,
@@ -66,6 +77,8 @@ var PRODUCTS = [
   },
   {
     id: "p3",
+    rating: 4.8,
+    ratingCount: 3120,
     name: "Lámpara LED ambiente",
     category: "Hogar",
     price: 18999,
@@ -78,6 +91,8 @@ var PRODUCTS = [
   },
   {
     id: "p4",
+    rating: 4.7,
+    ratingCount: 1543,
     name: "Difusor aromático premium",
     category: "Hogar",
     price: 15999,
@@ -90,6 +105,8 @@ var PRODUCTS = [
   },
   {
     id: "p5",
+    rating: 4.6,
+    ratingCount: 987,
     name: "Set de skincare esencial",
     category: "Cuidado personal",
     price: 21999,
@@ -102,6 +119,8 @@ var PRODUCTS = [
   },
   {
     id: "p6",
+    rating: 4.8,
+    ratingCount: 4215,
     name: "Botella térmica 750 ml",
     category: "Cuidado personal",
     price: 12999,
@@ -114,6 +133,8 @@ var PRODUCTS = [
   },
   {
     id: "p7",
+    rating: 4.7,
+    ratingCount: 1298,
     name: "Collar minimalista bañado en oro",
     category: "Accesorios",
     price: 16999,
@@ -126,6 +147,8 @@ var PRODUCTS = [
   },
   {
     id: "p8",
+    rating: 4.6,
+    ratingCount: 856,
     name: "Billetera slim de cuero",
     category: "Accesorios",
     price: 14999,
@@ -138,6 +161,8 @@ var PRODUCTS = [
   },
   {
     id: "p9",
+    rating: 4.8,
+    ratingCount: 2764,
     name: "Banda elástica fitness (set x5)",
     category: "Fitness",
     price: 9999,
@@ -150,6 +175,8 @@ var PRODUCTS = [
   },
   {
     id: "p10",
+    rating: 4.7,
+    ratingCount: 1432,
     name: "Esterilla de yoga antideslizante",
     category: "Fitness",
     price: 17999,

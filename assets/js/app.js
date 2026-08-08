@@ -28,7 +28,8 @@
     products: "aurea_products",
     cart: "aurea_cart",
     users: "aurea_users",
-    session: "aurea_session"
+    session: "aurea_session",
+    reviews: "aurea_reviews"
   };
 
   /* ---------- Utilidades ---------- */
@@ -43,7 +44,15 @@
 
   function money(n) {
     var num = Number(n) || 0;
-    return CONFIG.currency + " " + num.toLocaleString("es-AR", { maximumFractionDigits: 2 });
+    return CONFIG.currency + " " + num.toLocaleString("es-CL", { maximumFractionDigits: 2 });
+  }
+
+  /* Estrellas con relleno proporcional (ej: 4.7 pinta el 94% en dorado). */
+  function starsHTML(rating) {
+    var pct = Math.max(0, Math.min(5, Number(rating) || 0)) / 5 * 100;
+    return '<span class="stars" aria-label="' + esc(rating) + ' de 5">' +
+      '<span class="stars-bg">★★★★★</span>' +
+      '<span class="stars-fg" style="width:' + pct + '%">★★★★★</span></span>';
   }
 
   function toast(msg) {
@@ -70,7 +79,29 @@
     return null;
   }
 
-  /* ---------- Estado ---------- */
+  /* ---------- Opiniones de clientes por producto ---------- */
+  function getReviews(pid) {
+    var all = store.get(KEYS.reviews, {});
+    return Array.isArray(all[pid]) ? all[pid] : [];
+  }
+
+  function saveReviews(pid, list) {
+    var all = store.get(KEYS.reviews, {});
+    all[pid] = list;
+    store.set(KEYS.reviews, all);
+  }
+
+  /* Valoración a mostrar: mezcla la del proveedor con las opiniones locales. */
+  function displayRating(p) {
+    var base = Number(p.rating) || 0;
+    var baseCount = Math.max(0, Math.floor(Number(p.ratingCount) || 0));
+    var local = getReviews(p.id);
+    var count = baseCount + local.length;
+    if (!count) return null;
+    var sum = base * baseCount;
+    for (var i = 0; i < local.length; i++) sum += Number(local[i].stars) || 0;
+    return { rating: Math.round((sum / count) * 10) / 10, count: count };
+  }
   var state = {
     category: "Todo",
     search: "",
@@ -119,6 +150,14 @@
       '<div class="card-body">' +
       '<span class="card-cat">' + esc(p.category) + "</span>" +
       '<h3 class="card-name" data-view="' + esc(p.id) + '">' + esc(p.name) + "</h3>" +
+      (function () {
+        var r = displayRating(p);
+        return r
+          ? '<div class="card-rating" data-view="' + esc(p.id) + '">' + starsHTML(r.rating) +
+            ' <span class="muted small">' + esc(r.rating) + " · " +
+            r.count.toLocaleString("es-CL") + " opiniones</span></div>"
+          : "";
+      })() +
       '<p class="card-desc">' + esc(p.desc) + "</p>" +
       '<div class="card-foot">' + priceHtml + btn + "</div>" +
       "</div></article>";
@@ -264,10 +303,40 @@
     var media = p.image
       ? '<img src="' + esc(p.image) + '" alt="' + esc(p.name) + '">'
       : esc(p.emoji || "🛍️");
+    var r = displayRating(p);
+    var reviews = getReviews(p.id);
+
+    var reviewsHTML = reviews.length
+      ? reviews.map(function (rv, i) {
+          return '<div class="review">' +
+            '<div class="review-head">' +
+            "<strong>" + esc(rv.name) + "</strong> " + starsHTML(rv.stars) +
+            '<span class="muted small"> ' + esc(rv.date) + "</span>" +
+            (isCreator() ? ' <button class="cart-remove" data-delreview="' + i + '">✕ borrar</button>' : "") +
+            "</div>" +
+            (rv.text ? '<p class="review-text">' + esc(rv.text) + "</p>" : "") +
+            "</div>";
+        }).join("")
+      : '<p class="muted small">Todavía no hay opiniones en la tienda. ¡Sé el primero!</p>';
+
+    var formHTML = state.session
+      ? '<form id="reviewForm">' +
+        '<div class="star-pick" id="starPick">' +
+        [1, 2, 3, 4, 5].map(function (n) {
+          return '<button type="button" class="star-btn" data-star="' + n + '">★</button>';
+        }).join("") +
+        '<span class="muted small" id="starLabel">Elegí tu puntuación</span></div>' +
+        '<textarea class="input" id="reviewText" rows="2" maxlength="300" placeholder="Contanos qué te pareció (opcional)"></textarea>' +
+        '<button class="btn btn-outline btn-sm" type="submit">Publicar opinión</button>' +
+        "</form>"
+      : '<button class="link-btn" id="reviewLogin">Iniciá sesión para dejar tu opinión</button>';
+
     openModal(
       '<div class="pd-media">' + media + "</div>" +
       '<span class="card-cat">' + esc(p.category) + "</span>" +
       "<h3>" + esc(p.name) + "</h3>" +
+      (r ? '<div class="card-rating">' + starsHTML(r.rating) + ' <span class="muted small">' +
+        esc(r.rating) + " · " + r.count.toLocaleString("es-CL") + " valoraciones de compradores</span></div>" : "") +
       "<p class='muted'>" + esc(p.desc) + "</p>" +
       '<p class="price" style="margin:.8rem 0">' +
       (p.oldPrice && Number(p.oldPrice) > Number(p.price)
@@ -276,10 +345,61 @@
       '<p class="muted small">' + (Number(p.stock) > 0
         ? "Stock disponible: " + Number(p.stock) + " unidades"
         : "Producto agotado por el momento") + "</p>" +
+      '<p class="muted small">' + esc(CONFIG.shippingNote || "") + "</p>" +
       (Number(p.stock) > 0
         ? '<button class="btn btn-gold btn-block" style="margin-top:1rem" data-add="' + esc(p.id) + '">Agregar al carrito</button>'
-        : "")
+        : "") +
+      '<div class="reviews-block"><h3 style="font-size:1.1rem">Opiniones</h3>' +
+      reviewsHTML + formHTML + "</div>"
     );
+
+    // Borrado de opiniones (solo el creador)
+    $all("[data-delreview]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var list = getReviews(p.id);
+        list.splice(Number(b.getAttribute("data-delreview")), 1);
+        saveReviews(p.id, list);
+        renderCatalog();
+        viewProduct(p.id);
+        toast("Opinión eliminada");
+      });
+    });
+
+    var loginBtn = $("#reviewLogin");
+    if (loginBtn) loginBtn.addEventListener("click", function () { authModal("login"); });
+
+    var form = $("#reviewForm");
+    if (form) {
+      var chosen = 0;
+      var labels = ["Elegí tu puntuación", "Malo", "Regular", "Bueno", "Muy bueno", "Excelente"];
+      $all(".star-btn").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          chosen = Number(btn.getAttribute("data-star"));
+          $all(".star-btn").forEach(function (b2) {
+            b2.classList.toggle("on", Number(b2.getAttribute("data-star")) <= chosen);
+          });
+          $("#starLabel").textContent = labels[chosen];
+        });
+      });
+      form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        if (!chosen) { toast("Elegí cuántas estrellas le das"); return; }
+        var list = getReviews(p.id).filter(function (rv) {
+          return rv.email !== state.session.email; // una opinión por persona
+        });
+        list.unshift({
+          name: state.session.name.split(" ")[0],
+          email: state.session.email,
+          stars: chosen,
+          text: $("#reviewText").value.trim(),
+          date: new Date().toLocaleDateString("es-CL")
+        });
+        saveReviews(p.id, list);
+        renderCatalog();
+        viewProduct(p.id);
+        toast("¡Gracias por tu opinión! ✦");
+      });
+    }
   }
 
   /* ==========================================================================
@@ -560,6 +680,8 @@
       '<input class="input" id="pfPrice" type="number" min="0" step="0.01" placeholder="Precio" required value="' + esc(p.price) + '">' +
       '<input class="input" id="pfOld" type="number" min="0" step="0.01" placeholder="Precio anterior (opcional, para ofertas)" value="' + esc(p.oldPrice || "") + '">' +
       '<input class="input" id="pfStock" type="number" min="0" step="1" placeholder="Stock" required value="' + esc(p.stock) + '">' +
+      '<input class="input" id="pfRating" type="number" min="0" max="5" step="0.1" placeholder="Valoración del producto (0 a 5, la del listing del proveedor)" value="' + esc(p.rating || "") + '">' +
+      '<input class="input" id="pfRatingCount" type="number" min="0" step="1" placeholder="Cantidad de valoraciones del listing" value="' + esc(p.ratingCount || "") + '">' +
       '<input class="input" id="pfEmoji" placeholder="Emoji (si no hay foto)" maxlength="4" value="' + esc(p.emoji) + '">' +
       '<input class="input" id="pfImage" type="url" placeholder="URL de imagen (opcional, https://...)" value="' + esc(p.image) + '">' +
       '<input class="input" id="pfPay" type="url" placeholder="Link de pago (opcional, Mercado Pago/Stripe)" value="' + esc(p.paymentLink || "") + '">' +
@@ -583,6 +705,8 @@
         price: Number($("#pfPrice").value) || 0,
         oldPrice: Number($("#pfOld").value) || 0,
         stock: Math.max(0, Math.floor(Number($("#pfStock").value) || 0)),
+        rating: Math.max(0, Math.min(5, Number($("#pfRating").value) || 0)),
+        ratingCount: Math.max(0, Math.floor(Number($("#pfRatingCount").value) || 0)),
         emoji: $("#pfEmoji").value.trim() || "🛍️",
         image: img,
         paymentLink: pay,
@@ -646,7 +770,7 @@
 
     openModal(
       "<h3>Finalizar compra</h3>" +
-      '<p class="muted small">Pedido <strong>' + orderCode + "</strong></p>" +
+      '<p class="muted small">Pedido <strong>' + orderCode + "</strong> · " + esc(CONFIG.shippingNote || "") + "</p>" +
       '<div style="background:var(--ivory);border-radius:10px;padding:1rem;margin:.8rem 0">' +
       lines.map(function (l) { return '<div style="font-size:.9rem">' + esc(l) + "</div>"; }).join("") +
       '<div style="border-top:1px solid var(--gold-soft);margin-top:.6rem;padding-top:.6rem;display:flex;justify-content:space-between"><strong>Total</strong><strong>' + esc(money(total)) + "</strong></div>" +
