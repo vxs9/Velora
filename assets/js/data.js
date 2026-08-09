@@ -235,24 +235,7 @@ var PRODUCTS = [
     providerLink: "https://es.aliexpress.com/w/wholesale-derma-roller-capilar.html"
   },
 
-  /* ---------- TECNOLOGÍA Y ACCESORIOS (complementos de alto margen) ---------- */
-  {
-    id: "p1",
-    name: "Auriculares inalámbricos Pro",
-    category: "Tecnología",
-    price: 34999,
-    oldPrice: 42999,
-    cost: 12000,
-    rating: 4.7,
-    ratingCount: 2341,
-    emoji: "🎧",
-    image: "",
-    desc: "Cancelación de ruido, estuche de carga y 24 h de batería.",
-    stock: 0,
-    colors: ["Negro", "Blanco"],
-    paymentLink: "",
-    providerLink: "https://es.aliexpress.com/w/wholesale-auriculares-tws-bluetooth.html"
-  },
+  /* ---------- COMPLEMENTO DE REGALO ---------- */
   {
     id: "p7",
     name: "Collar minimalista bañado en oro",
