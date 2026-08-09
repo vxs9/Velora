@@ -35,9 +35,12 @@ var CONFIG = {
 };
 
 /*
-  Catálogo inicial de ejemplo, armado con categorías que funcionan muy bien
-  en tiendas online chicas (alta demanda, buen margen, fácil de enviar).
-  Reemplazá estos productos por los tuyos desde el Panel del creador.
+  Catálogo enfocado en lo que Velora realmente va a tener en stock:
+  perfumes árabes (proveedor: M Perfumes, catálogo de WhatsApp), Tubbees,
+  y la línea de crecimiento capilar (la "necesidad": caída del pelo).
+
+  Los costos de perfumería son los del catálogo de M Perfumes menos el
+  descuento mayorista de $3.000; ajustalos con la factura real al comprar.
 
   Campos:
     id          — único, no repetir
@@ -45,224 +48,226 @@ var CONFIG = {
     category    — categoría (arma los filtros automáticamente)
     price       — precio actual (número)
     oldPrice    — precio anterior (opcional; si existe, aparece en Ofertas)
-    emoji       — ícono que se muestra si no hay imagen
+    emoji       — ícono que se muestra si no hay foto
     image       — URL de imagen (opcional, ej. https://...)
     desc        — descripción corta
     stock       — unidades disponibles (0 = agotado)
     paymentLink — link de pago individual (opcional)
-    providerLink — link del proveedor (Temu/AliExpress/etc.); privado,
-                   solo se ve en el Panel del creador
-    rating      — valoración del producto (0 a 5). IMPORTANTE: los valores de
-                  abajo son de EJEMPLO, típicos de estas categorías. Cuando
-                  cargues tus productos reales, copiá la valoración real del
-                  listing de tu proveedor (editable en el Panel del creador).
-    ratingCount — cantidad de valoraciones que muestra ese listing
-    cost        — costo por unidad pagado al proveedor (privado; se usa para
-                  calcular las ganancias en el panel de Gestión)
+    providerLink — link del proveedor; privado, solo en el Panel del creador
+    rating      — valoración del producto (0 a 5), la del mercado/listing
+    ratingCount — cantidad de valoraciones de referencia
+    cost        — costo por unidad (privado; calcula las ganancias en Gestión)
+    colors      — variantes de color (opcional)
+    barcode     — código de barras para el escáner de stock (opcional)
 */
 var PRODUCTS = [
+  /* ---------- PERFUMERÍA (proveedor: M Perfumes · wa.me/c/56978792710) ---------- */
   {
-    id: "p1",
-    providerLink: "https://es.aliexpress.com/w/wholesale-auriculares-tws-bluetooth.html",
-    colors: ["Negro","Blanco"],
-    cost: 12000,
-    rating: 4.7,
-    ratingCount: 2341,
-    name: "Auriculares inalámbricos Pro",
-    category: "Tecnología",
-    price: 34999,
-    oldPrice: 42999,
-    emoji: "🎧",
-    image: "",
-    desc: "Cancelación de ruido, estuche de carga y 24 h de batería.",
-    stock: 15,
-    paymentLink: ""
-  },
-  {
-    id: "p2",
-    providerLink: "https://es.aliexpress.com/w/wholesale-smartwatch-mujer-hombre.html",
-    colors: ["Negro","Rosa","Azul"],
-    cost: 16000,
-    rating: 4.6,
-    ratingCount: 1876,
-    name: "Smartwatch Serie S",
-    category: "Tecnología",
-    price: 45999,
+    id: "p20",
+    name: "Set Lattafa Yara · EDP 100 ml + Spray 200 ml",
+    category: "Perfumería",
+    price: 32990,
     oldPrice: 0,
-    emoji: "⌚",
-    image: "",
-    desc: "Monitor de ritmo cardíaco, sueño y notificaciones del celular.",
-    stock: 10,
-    paymentLink: ""
-  },
-  {
-    id: "p4",
-    providerLink: "https://es.aliexpress.com/w/wholesale-difusor-aromas-ultrasonico.html",
-    colors: ["Blanco","Beige"],
-    cost: 5500,
-    rating: 4.7,
-    ratingCount: 1543,
-    name: "Difusor aromático premium",
-    category: "Hogar",
-    price: 15999,
-    oldPrice: 0,
-    emoji: "🕯️",
-    image: "",
-    desc: "Difusor ultrasónico con luz suave. Incluye set de 3 esencias.",
-    stock: 18,
-    paymentLink: ""
-  },
-  {
-    id: "p5",
-    providerLink: "https://es.aliexpress.com/w/wholesale-serum-vitamina-c-skincare-set.html",
-    colors: [],
-    cost: 7500,
-    rating: 4.6,
-    ratingCount: 987,
-    name: "Set de skincare esencial",
-    category: "Cuidado personal",
-    price: 21999,
-    oldPrice: 27999,
-    emoji: "🧴",
-    image: "",
-    desc: "Limpiador, sérum de vitamina C y crema hidratante. Rutina completa.",
-    stock: 25,
-    paymentLink: ""
-  },
-  {
-    id: "p6",
-    providerLink: "https://es.aliexpress.com/w/wholesale-botella-termica-750ml-acero.html",
-    colors: ["Negro","Blanco","Celeste"],
-    cost: 4500,
+    cost: 22990,
     rating: 4.8,
-    ratingCount: 4215,
-    name: "Botella térmica 750 ml",
-    category: "Cuidado personal",
-    price: 12999,
+    ratingCount: 5240,
+    emoji: "🎁",
+    image: "",
+    desc: "El perfume árabe más vendido de Chile en set de regalo: dulce, cremoso y dura todo el día.",
+    stock: 2,
+    colors: [],
+    paymentLink: "",
+    providerLink: "https://wa.me/c/56978792710"
+  },
+  {
+    id: "p21",
+    name: "Set Lattafa Asad · EDP 100 ml + Spray 200 ml",
+    category: "Perfumería",
+    price: 30990,
     oldPrice: 0,
-    emoji: "🥤",
+    cost: 21990,
+    rating: 4.8,
+    ratingCount: 2140,
+    emoji: "🎁",
     image: "",
-    desc: "Acero inoxidable, 12 h frío / 6 h calor. Diseño minimalista.",
-    stock: 30,
-    paymentLink: ""
+    desc: "El favorito de los hombres en formato regalo: intenso, elegante y con presencia.",
+    stock: 2,
+    colors: [],
+    paymentLink: "",
+    providerLink: "https://wa.me/c/56978792710"
   },
   {
-    id: "p7",
-    providerLink: "https://es.aliexpress.com/w/wholesale-collar-chapado-oro-18k-mujer.html",
-    colors: ["Dorado"],
-    cost: 3500,
+    id: "p13",
+    name: "Lattafa Khamrah EDP 100 ml",
+    category: "Perfumería",
+    price: 30990,
+    oldPrice: 0,
+    cost: 22990,
     rating: 4.7,
-    ratingCount: 1298,
-    name: "Collar minimalista bañado en oro",
-    category: "Accesorios",
-    price: 16999,
-    oldPrice: 21999,
-    emoji: "✨",
+    ratingCount: 3115,
+    emoji: "🥃",
     image: "",
-    desc: "Cadena fina con dije geométrico. Hipoalergénico, con estuche regalo.",
-    stock: 12,
-    paymentLink: ""
+    desc: "Especiado y dulce, unisex. Uno de los árabes más pedidos para regalo.",
+    stock: 2,
+    colors: [],
+    paymentLink: "",
+    providerLink: "https://wa.me/c/56978792710"
   },
   {
-    id: "p8",
-    providerLink: "https://es.aliexpress.com/w/wholesale-billetera-rfid-slim-cuero.html",
-    colors: ["Negro","Café"],
+    id: "p22",
+    name: "Lattafa Asad EDP 100 ml",
+    category: "Perfumería",
+    price: 26990,
+    oldPrice: 0,
+    cost: 18990,
+    rating: 4.8,
+    ratingCount: 3900,
+    emoji: "🦁",
+    image: "",
+    desc: "El #1 masculino de Lattafa: café, pimienta y ámbar. Compliment magnet.",
+    stock: 2,
+    colors: [],
+    paymentLink: "",
+    providerLink: "https://wa.me/c/56978792710"
+  },
+  {
+    id: "p23",
+    name: "Lattafa Mayar EDP 100 ml",
+    category: "Perfumería",
+    price: 30990,
+    oldPrice: 0,
+    cost: 22990,
+    rating: 4.7,
+    ratingCount: 1820,
+    emoji: "🌺",
+    image: "",
+    desc: "Floral frutal femenino, elegante y fresco. El segundo favorito de las clientas.",
+    stock: 2,
+    colors: [],
+    paymentLink: "",
+    providerLink: "https://wa.me/c/56978792710"
+  },
+  {
+    id: "p24",
+    name: "Set Lattafa Eclaire · EDP 100 ml + Spray 200 ml",
+    category: "Perfumería",
+    price: 37990,
+    oldPrice: 0,
+    cost: 27990,
+    rating: 4.7,
+    ratingCount: 960,
+    emoji: "🍮",
+    image: "",
+    desc: "Caramelo y vainilla cremosa: el dulce viral de TikTok en set de regalo.",
+    stock: 1,
+    colors: [],
+    paymentLink: "",
+    providerLink: "https://wa.me/c/56978792710"
+  },
+  {
+    id: "p25",
+    name: "Tubbees Body Spray · aromas dulces",
+    category: "Perfumería",
+    price: 8990,
+    oldPrice: 0,
     cost: 5000,
     rating: 4.6,
-    ratingCount: 856,
-    name: "Billetera slim de cuero",
-    category: "Accesorios",
-    price: 14999,
-    oldPrice: 0,
-    emoji: "👜",
+    ratingCount: 740,
+    emoji: "🍭",
     image: "",
-    desc: "Cuero genuino con protección RFID. Elegante y compacta.",
-    stock: 16,
-    paymentLink: ""
-  },
-  {
-    id: "p9",
-    providerLink: "https://es.aliexpress.com/w/wholesale-bandas-resistencia-set-5.html",
+    desc: "Los sprays virales que huelen a postre: Cookies & Cream, Candy Pop, Bubble Gum y más.",
+    stock: 12,
     colors: [],
-    cost: 3000,
-    rating: 4.8,
-    ratingCount: 2764,
-    name: "Banda elástica fitness (set x5)",
-    category: "Fitness",
-    price: 9999,
-    oldPrice: 13999,
-    emoji: "💪",
-    image: "",
-    desc: "Cinco niveles de resistencia con bolsa de transporte y guía de rutinas.",
-    stock: 40,
-    paymentLink: ""
-  },
-  {
-    id: "p10",
-    providerLink: "https://es.aliexpress.com/w/wholesale-esterilla-yoga-tpe-6mm.html",
-    colors: ["Morado","Verde","Rosa"],
-    cost: 6000,
-    rating: 4.7,
-    ratingCount: 1432,
-    name: "Esterilla de yoga antideslizante",
-    category: "Fitness",
-    price: 17999,
-    oldPrice: 0,
-    emoji: "🧘",
-    image: "",
-    desc: "6 mm de espesor, material ecológico, con correa para llevarla.",
-    stock: 14,
-    paymentLink: ""
+    paymentLink: "",
+    providerLink: "https://wa.me/c/56978792710"
   },
   {
     id: "p11",
-    providerLink: "https://vypmayorista.cl/producto/armaf-desodorante-mandarin-sky-hombre-200-ml/",
-    colors: [],
-    cost: 6500,
-    rating: 4.8,
-    ratingCount: 1856,
     name: "Armaf Mandarin Sky · Body Spray 200 ml",
     category: "Perfumería",
     price: 11990,
     oldPrice: 14990,
+    cost: 6500,
+    rating: 4.8,
+    ratingCount: 1856,
     emoji: "🍊",
     image: "",
     desc: "El viral de TikTok: la fragancia del perfume en formato desodorante. Inspirado en Scandal Pour Homme.",
-    stock: 20,
-    paymentLink: ""
-  },
-  {
-    id: "p12",
-    providerLink: "https://www.multimarcasmayorista.cl/marcas-1/lattafa",
+    stock: 0,
     colors: [],
-    cost: 15000,
-    rating: 4.8,
-    ratingCount: 5240,
-    name: "Lattafa Yara EDP 100 ml",
-    category: "Perfumería",
-    price: 27990,
-    oldPrice: 0,
-    emoji: "🌸",
-    image: "",
-    desc: "El perfume árabe más vendido de Chile: dulce, cremoso y dura todo el día.",
-    stock: 12,
-    paymentLink: ""
+    paymentLink: "",
+    providerLink: "https://vypmayorista.cl/producto/armaf-desodorante-mandarin-sky-hombre-200-ml/"
   },
+
+  /* ---------- CUIDADO CAPILAR (la necesidad: caída y crecimiento del pelo) ---------- */
   {
-    id: "p13",
-    providerLink: "https://productosdelujo.cl/collections/lattafa-perfumes-arabes",
-    colors: [],
-    cost: 19000,
+    id: "p26",
+    name: "Aceite de Romero para Crecimiento Capilar",
+    category: "Cuidado capilar",
+    price: 9990,
+    oldPrice: 12990,
+    cost: 2000,
     rating: 4.7,
-    ratingCount: 3115,
-    name: "Lattafa Khamrah EDP 100 ml",
-    category: "Perfumería",
-    price: 34990,
-    oldPrice: 39990,
-    emoji: "🥃",
+    ratingCount: 3240,
+    emoji: "🌿",
     image: "",
-    desc: "Especiado y dulce, unisex. Uno de los árabes más pedidos para regalo.",
+    desc: "El viral #1 contra la caída del pelo: fortalece, estimula crecimiento y da brillo. Uso diario.",
     stock: 10,
-    paymentLink: ""
+    colors: [],
+    paymentLink: "",
+    providerLink: "https://es.aliexpress.com/w/wholesale-aceite-romero-crecimiento-cabello.html"
+  },
+  {
+    id: "p27",
+    name: "Kit Crecimiento Capilar · aceite + derma roller + cepillo",
+    category: "Cuidado capilar",
+    price: 21990,
+    oldPrice: 0,
+    cost: 5500,
+    rating: 4.8,
+    ratingCount: 1560,
+    emoji: "🌱",
+    image: "",
+    desc: "La rutina completa: aceite de romero, derma roller capilar y cepillo masajeador de cuero cabelludo.",
+    stock: 8,
+    colors: [],
+    paymentLink: "",
+    providerLink: "https://es.aliexpress.com/w/wholesale-derma-roller-capilar.html"
+  },
+
+  /* ---------- TECNOLOGÍA Y ACCESORIOS (complementos de alto margen) ---------- */
+  {
+    id: "p1",
+    name: "Auriculares inalámbricos Pro",
+    category: "Tecnología",
+    price: 34999,
+    oldPrice: 42999,
+    cost: 12000,
+    rating: 4.7,
+    ratingCount: 2341,
+    emoji: "🎧",
+    image: "",
+    desc: "Cancelación de ruido, estuche de carga y 24 h de batería.",
+    stock: 0,
+    colors: ["Negro", "Blanco"],
+    paymentLink: "",
+    providerLink: "https://es.aliexpress.com/w/wholesale-auriculares-tws-bluetooth.html"
+  },
+  {
+    id: "p7",
+    name: "Collar minimalista bañado en oro",
+    category: "Accesorios",
+    price: 16999,
+    oldPrice: 21999,
+    cost: 3500,
+    rating: 4.7,
+    ratingCount: 1298,
+    emoji: "✨",
+    image: "",
+    desc: "Cadena fina con dije geométrico. Hipoalergénico, con estuche regalo.",
+    stock: 0,
+    colors: ["Dorado"],
+    paymentLink: "",
+    providerLink: "https://es.aliexpress.com/w/wholesale-collar-chapado-oro-18k-mujer.html"
   }
 ];
