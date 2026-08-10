@@ -1889,6 +1889,15 @@
   $("#year").textContent = new Date().getFullYear();
   // Banner de promoción de lanzamiento en la barra superior
   if (CONFIG.promoBanner) $(".topbar span").textContent = CONFIG.promoBanner;
+  // Links a Instagram (pie de página y contacto)
+  if (CONFIG.instagram) {
+    var igUrl = "https://instagram.com/" + CONFIG.instagram;
+    var igText = "📷 @" + CONFIG.instagram;
+    var footIg = $("#footInsta");
+    var contactIg = $("#contactInsta");
+    if (footIg) { footIg.href = igUrl; footIg.textContent = "Instagram: @" + CONFIG.instagram; footIg.hidden = false; }
+    if (contactIg) { contactIg.href = igUrl; contactIg.textContent = igText; contactIg.hidden = false; }
+  }
   renderCatalog();
   renderCart();
   renderAccountUI();

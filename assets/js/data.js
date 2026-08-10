@@ -31,7 +31,9 @@ var CONFIG = {
   promoPct: 10,
   promoBanner: "🎁 10% OFF en tu primera compra con el código VELORA10 · Envío a todo Chile",
   // Garantía que se muestra al pagar (genera confianza en tienda nueva):
-  guaranteeNote: "✔ Garantía Velora: si tu producto llega con cualquier problema, lo cambiamos o te devolvemos tu dinero."
+  guaranteeNote: "✔ Garantía Velora: si tu producto llega con cualquier problema, lo cambiamos o te devolvemos tu dinero.",
+  // Usuario de Instagram (sin @). Aparece en el pie de página y en Contacto.
+  instagram: "velora.perfumes.cl"
 };
 
 /*

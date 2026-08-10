@@ -7,7 +7,7 @@
         content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'none'; base-uri 'none'; form-action 'none'">
   <meta name="description" content="Velora — Perfumería online. Perfumes árabes originales, cuidado personal y sets de regalo con envío a todo Chile.">
   <title>Velora · Perfumería online</title>
-  <link rel="stylesheet" href="assets/css/styles.css?v=12">
+  <link rel="stylesheet" href="assets/css/styles.css?v=13">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9C%A6%3C/text%3E%3C/svg%3E">
 </head>
 <body>
@@ -187,6 +187,7 @@
       <div class="section-head">
         <h2>Contacto</h2>
         <p class="muted">¿Dudas antes de comprar? Escribinos.</p>
+        <p><a class="insta-link" id="contactInsta" target="_blank" rel="noopener noreferrer" hidden></a></p>
       </div>
       <form class="contact-form" id="contactForm">
         <input class="input" type="text" id="contactName" placeholder="Tu nombre" required maxlength="80">
@@ -212,6 +213,7 @@
       <text x="62" y="40" font-family="Georgia, 'Times New Roman', serif" font-size="26" letter-spacing="7" fill="currentColor">VELORA</text>
     </svg>
     <p class="muted small">Tienda online con compra protegida.</p>
+    <a class="link-btn" id="footInsta" target="_blank" rel="noopener noreferrer" hidden></a>
     <button class="link-btn" id="footPrivacy">Política de privacidad</button>
     <p class="muted small">© <span id="year"></span> Velora. Todos los derechos reservados.</p>
   </footer>
@@ -226,7 +228,7 @@
 
   <div class="toast" id="toast" hidden></div>
 
-  <script src="assets/js/data.js?v=12"></script>
-  <script src="assets/js/app.js?v=12"></script>
+  <script src="assets/js/data.js?v=13"></script>
+  <script src="assets/js/app.js?v=13"></script>
 </body>
 </html>
