@@ -148,6 +148,23 @@ var PRODUCTS = [
     providerLink: "https://wa.me/c/56978792710"
   },
   {
+    id: "p30",
+    name: "Lattafa Bade'e Al Oud Honor & Glory EDP 100 ml",
+    category: "Perfumería",
+    price: 28990,
+    oldPrice: 0,
+    cost: 20990,
+    rating: 4.7,
+    ratingCount: 2600,
+    emoji: "🏆",
+    image: "",
+    desc: "Blanco y dorado, elegante total: oud cremoso con dulzor suave. Unisex y adictivo.",
+    stock: 1,
+    colors: [],
+    paymentLink: "",
+    providerLink: "https://wa.me/c/56978792710"
+  },
+  {
     id: "p22",
     name: "Lattafa Asad EDP 100 ml",
     category: "Perfumería",
